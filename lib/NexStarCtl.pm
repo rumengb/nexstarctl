@@ -104,7 +104,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.06";
+our $VERSION = "0.06.1";
 
 use constant {
 	TC_TRACK_OFF => 0,

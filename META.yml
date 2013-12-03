@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               NexStarCtl
-version:            0.06
+version:            0.06.1
 abstract:           NexStarCtl - API to control NexStar compatible telescopes
 author:
     - Rumen Bogdanovski <rumen@skyarchive.org>

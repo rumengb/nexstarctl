@@ -1,5 +1,9 @@
 Revision history for Perl extension NexStarCtl.
 
+
+0.06.1 Tue Dec  3 12:24:58 2013
+	- fix some documentation errors
+
 0.06  Sun Nov  3 13:16:30 2013
 	- fix the ID of Advanced VX
 
