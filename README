@@ -1,0 +1,33 @@
+NexStarCtl version 0.01
+=======================
+
+This module implements the serial commands supported by the Celestron 
+NexStar hand control. This applies to the NexStar GPS, NexStar GPS-SA, 
+NexStar iSeries, NexStar SE Series, NexStar GT, CPC, SLT, Advanced-VX,
+Advanced-GT, and CGE mounts.
+
+Communication to the hand control is 9600 bits/sec, no parity and one 
+stop bit via the RS-232 port on the base of the hand control.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+   Device::SerialPort
+   Time::Local
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2013 by Rumen G.Bogdanovski
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.12.4 or,
+at your option, any later version of Perl 5 you may have available.
+

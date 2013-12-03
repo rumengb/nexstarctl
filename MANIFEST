@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/NexStarCtl.t
+lib/NexStarCtl.pm
+testcode/celestron.pl
+META.yml                                 Module meta-data (added by MakeMaker)
