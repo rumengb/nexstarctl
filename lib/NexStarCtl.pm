@@ -577,7 +577,7 @@ sub tc_get_location_str {
 	return tc_get_location(@_, 1);
 }
 
-=item tc_get_location(port,lon,lat)
+=item tc_set_location(port,lon,lat)
 
 This function sets the location coordinates lon, lat in decimal degrees. 
 Negative longitude is WEST. Negative latitude is SOUTH.
@@ -629,7 +629,7 @@ sub tc_set_location {
 This function returns the stored time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
 If no response received undef is returned. 
 
-=item tc_get_location_str(port)
+=item tc_get_time_str(port)
 
 This function returns the stored date, time (as strings), timezone (in hours) and daylight saving time(0|1).
 If no response received undef is returned.
