@@ -104,7 +104,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.06.1";
+our $VERSION = "0.07";
 
 use constant {
 	TC_TRACK_OFF => 0,
@@ -673,7 +673,8 @@ sub tc_get_time_str {
 
 This function sets the time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
 On success 1 is returned.
-If no response received undef is returned.
+If no response received undef is returned. If the mount is known to have RTC
+(currently only CGE and AdvancedVX) the date/time is set to RTC too.
 
 =cut
 sub tc_set_time {
@@ -702,11 +703,60 @@ sub tc_set_time {
 	$port->write(chr($dst));
 
 	my $response = read_telescope($port, 1);
-	if (defined $response) {
-		return 1;
-	} else {
+	if (! defined $response) {
 		return undef;
 	}
+
+	my $model = tc_get_model($port);
+	# If the mount has RTC set date/time to RTC too
+	# I only know CGE(5) and AdvancedVX(20) to have RTC
+	if (($model == 5) or ($model == 20)) {
+		# Set year
+		$port->write("P");
+		$port->write(3);
+		$port->write(178);
+		$port->write(132);
+		$port->write(chr(int(($year + 1900) / 256)));
+		$port->write(chr(int(($year + 1900) % 256)));
+		$port->write(0);
+		$port->write(0);
+
+		my $response = read_telescope($port, 1);
+		if (! defined $response) {
+			return undef;
+		}
+
+		# Set month and day
+		$port->write("P");
+		$port->write(3);
+		$port->write(178);
+		$port->write(131);
+		$port->write(chr($mon+1));
+		$port->write(chr($day));
+		$port->write(0);
+		$port->write(0);
+
+		my $response = read_telescope($port, 1);
+		if (! defined $response) {
+			return undef;
+		}
+
+		# Set time
+		$port->write("P");
+		$port->write(4);
+		$port->write(178);
+		$port->write(179);
+		$port->write(chr($h));
+		$port->write(chr($m));
+		$port->write(chr($s));
+		$port->write(0);
+
+		my $response = read_telescope($port, 1);
+		if (! defined $response) {
+			return undef;
+		}
+	}
+	return 1;
 }
 
 =item tc_get_tracking_mode(port)
