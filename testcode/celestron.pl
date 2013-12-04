@@ -1,13 +1,15 @@
 #!/usr/bin/perl
 use strict;
+use lib '../lib';
 use NexStarCtl;
 
-print "(0,".TC_AXIS_RA_AZM.",".TC_DIR_POSITIVE.",3)\n";
+
+# print "(0,".TC_AXIS_RA_AZM.",".TC_DIR_POSITIVE.",3)\n";
 
 
-print get_model_name(1)."\n";
-print get_model_name(2)."\n";
-print get_model_name(19)."\n";
+#print get_model_name(1)."\n";
+#print get_model_name(2)."\n";
+#print get_model_name(19)."\n";
 
 my $port = open_telescope_port("/dev/cu.usbserial"); 
 
@@ -24,15 +26,15 @@ print "Align = ".tc_check_align($port)."\n";
 
 #print "SET LOC= ".tc_set_location($port,  dms2d("22:58:09"), dms2d("44:05:31"))."\n";
 
-my ($lon,$lat) = tc_get_location($port);
-print "LON=$lon LAT=$lat\n";
+#my ($lon,$lat) = tc_get_location($port);
+#print "LON=$lon LAT=$lat\n";
 
-my ($lon,$lat) = tc_get_location_str($port);
-print "LONs=$lon LATs=$lat\n";
+#my ($lon,$lat) = tc_get_location_str($port);
+#print "LONs=$lon LATs=$lat\n";
 
 my $tm=time();
 print "$tm\n";
-#print "SETTIME= ".tc_set_time($port,$tm,2,1)."\n";
+print "SETTIME= ".tc_set_time($port,$tm,2,0)."\n";
 
 my ($date,$time,$tz,$dst) = tc_get_time_str($port);
 

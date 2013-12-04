@@ -679,6 +679,8 @@ If no response received undef is returned. If the mount is known to have RTC
 =cut
 sub tc_set_time {
 	my ($port, $time, $tz, $dst) = @_;
+
+	my $timezone = $tz;
 	$tz += 256 if ($tz < 0);
 	
 	if ((defined $dst) and ($dst =! 0)) {
@@ -711,15 +713,18 @@ sub tc_set_time {
 	# If the mount has RTC set date/time to RTC too
 	# I only know CGE(5) and AdvancedVX(20) to have RTC
 	if (($model == 5) or ($model == 20)) {
+		# Convert to UT
+		my ($s,$m,$h,$day,$mon,$year,$wday,$yday,$isdst) = localtime($time - (($timezone + $dst) * 3600));
+
 		# Set year
 		$port->write("P");
-		$port->write(3);
-		$port->write(178);
-		$port->write(132);
+		$port->write(chr(3));
+		$port->write(chr(178));
+		$port->write(chr(132));
 		$port->write(chr(int(($year + 1900) / 256)));
 		$port->write(chr(int(($year + 1900) % 256)));
-		$port->write(0);
-		$port->write(0);
+		$port->write(chr(0));
+		$port->write(chr(0));
 
 		my $response = read_telescope($port, 1);
 		if (! defined $response) {
@@ -728,13 +733,13 @@ sub tc_set_time {
 
 		# Set month and day
 		$port->write("P");
-		$port->write(3);
-		$port->write(178);
-		$port->write(131);
+		$port->write(chr(3));
+		$port->write(chr(178));
+		$port->write(chr(131));
 		$port->write(chr($mon+1));
 		$port->write(chr($day));
-		$port->write(0);
-		$port->write(0);
+		$port->write(chr(0));
+		$port->write(chr(0));
 
 		my $response = read_telescope($port, 1);
 		if (! defined $response) {
@@ -743,13 +748,13 @@ sub tc_set_time {
 
 		# Set time
 		$port->write("P");
-		$port->write(4);
-		$port->write(178);
-		$port->write(179);
+		$port->write(chr(4));
+		$port->write(chr(178));
+		$port->write(chr(179));
 		$port->write(chr($h));
 		$port->write(chr($m));
 		$port->write(chr($s));
-		$port->write(0);
+		$port->write(chr(0));
 
 		my $response = read_telescope($port, 1);
 		if (! defined $response) {
