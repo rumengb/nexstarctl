@@ -104,7 +104,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.07";
+our $VERSION = "0.08";
 
 use constant {
 	TC_TRACK_OFF => 0,
@@ -682,8 +682,8 @@ sub tc_set_time {
 
 	my $timezone = $tz;
 	$tz += 256 if ($tz < 0);
-	
-	if ((defined $dst) and ($dst =! 0)) {
+
+	if ((defined $dst) and ($dst != 0)) {
 		$dst=1;
 	} else {
 		$dst=0;	
@@ -713,7 +713,7 @@ sub tc_set_time {
 	# If the mount has RTC set date/time to RTC too
 	# I only know CGE(5) and AdvancedVX(20) to have RTC
 	if (($model == 5) or ($model == 20)) {
-		# Convert to UT
+		# RTC expects UT, convert localtime to UT
 		my ($s,$m,$h,$day,$mon,$year,$wday,$yday,$isdst) = localtime($time - (($timezone + $dst) * 3600));
 
 		# Set year

@@ -32,9 +32,9 @@ print "Align = ".tc_check_align($port)."\n";
 #my ($lon,$lat) = tc_get_location_str($port);
 #print "LONs=$lon LATs=$lat\n";
 
-my $tm=time();
-print "$tm\n";
-print "SETTIME= ".tc_set_time($port,$tm,2,0)."\n";
+my $tm=time()+1720000;
+print "$tm+3600\n";
+print "SETTIME= ".tc_set_time($port,$tm,2,1)."\n";
 
 my ($date,$time,$tz,$dst) = tc_get_time_str($port);
 
