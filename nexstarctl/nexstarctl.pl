@@ -33,7 +33,7 @@ sub print_help() {
 	      "       Specify the telescope port. Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
 	      "          MacOSX: /dev/cu.usbserial\n".
-	      "          Solaris: /dev/ttya\n"  
+	      "          Solaris: /dev/ttya\n"
 }
 
 
@@ -47,8 +47,8 @@ sub get_time {
 		print RED "Wrong parameters.\n";
 		return undef;
 	}
-	
-	#get time here 
+
+	#get time here
 	print time()."\n";
 }
 
@@ -59,18 +59,18 @@ sub set_time {
 	my $tz;
 	my $time;
 	my $isdst;
-	
+
 	if($#params == 2) {
 		$date = $params[0];
 		$tz = round($params[1]);
 		$isdst = $params[2];
-		
+
 	} elsif ($#params == 3) {
 		$date = $params[0];
 		$tz = round($params[1]);
 		$isdst = $params[2];
 		$port = $params[2];
-		
+
 	} elsif ($#params <= 0) {
 		if (defined $params[0]) {
 			$port = $params[0];
@@ -78,19 +78,19 @@ sub set_time {
 		$time=time();
 	    $isdst = (localtime($time))[-1];
 		$tz = int((timegm(localtime($time)) - $time) / 3600);
-		$tz = $tz-1 if ($isdst); 
-		 
+		$tz = $tz-1 if ($isdst);
+
 	} else {
 		print RED "Wrong parameters.\n";
 		return undef;
 	}
-	
+
 	if (($tz < -12) or ($tz > 12)) {
 		print RED "Wrong time zone.\n";
 		return undef;
 	}
-	
-	# if $date is defined => the date is given by user 
+
+	# if $date is defined => the date is given by user
 	if (defined $date) {
 		print "USER: ";
 		$time = str2time($date);
@@ -102,16 +102,16 @@ sub set_time {
 
 	print "Setting time: ". strftime("%F %T", localtime($time)).", TZ = $tz, isDST = $isdst\n";
 	# set the telescope time here
-	
+
 	return 1;
 }
 
 
 sub main() {
 	my %options = ();
-	
+
 	my $command = shift @ARGV;
-	
+
 	if ($^O eq 'linux') {
 		$port = "/dev/ttyUSB0";
 	} elsif ($^O eq 'darwin') {
@@ -123,12 +123,12 @@ sub main() {
 	if (getopts("vh", \%options) == undef) {
 		exit 1;
 	}
-	
+
 	if (defined($options{h}) or (!defined($command))) {
 		print_help();
 		exit 1;
-	} 
-	
+	}
+
 	if(defined($options{v})) {
 		$verbose = 1;
 	}
@@ -154,10 +154,10 @@ sub main() {
 
 	} elsif ($command eq "getlocation") {
 		print "getlocation issued: $port\n";
-		 
+
 	} elsif ($command eq "setlocation") {
 		print "setlocation issued: $port\n";
- 	
+
 	} elsif ($command eq "settrack") {
 		print "settrack issued: $port\n";
 
@@ -168,7 +168,7 @@ sub main() {
 		print "goto issued: $port\n";
 
 	} elsif ($command eq "gotoaz") {
-		print "gotoaz issued: $port\n";	
+		print "gotoaz issued: $port\n";
 
 	} elsif ($command eq "getrade") {
 		print "getrade issued: $port\n";
@@ -181,9 +181,11 @@ sub main() {
 
 	} elsif ($command eq "status") {
 		print "status issued: $port\n";
+
 	} elsif ($command eq "-h") {
 		print_help();
 		exit 0;
+
 	} else {
 		print RED "What?\n";
 	}
