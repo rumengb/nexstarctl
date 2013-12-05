@@ -5,5 +5,5 @@ README
 t/NexStarCtl.t
 lib/NexStarCtl.pm
 testcode/celestron.pl
-nexstarctl/*.pl
+nexstarctl/nexstarctl.pl
 META.yml                                 Module meta-data (added by MakeMaker)
