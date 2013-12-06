@@ -527,7 +527,7 @@ If no response received undef is returned.
 
 =item tc_get_location_str(port)
 
-This function returns the stored location coordinates as string.
+This function returns the stored location coordinates lon and lat as strings.
 If no response received undef is returned.
 
 =cut
@@ -657,7 +657,7 @@ sub tc_get_time {
 	
 	if((defined $str) and ($str =! 0)) {
 		my $time=sprintf("%2d:%02d:%02d",$h,$m,$s);
-		my $date=sprintf("%d.%02d.%04d",$day,$mon,$year);
+		my $date=sprintf("%02d-%02d-%04d",$day,$mon,$year);
 		return ($date,$time, $tz, $dst);
 	} else {
 		my $time = timelocal($s,$m,$h,$day,$mon-1,$year);

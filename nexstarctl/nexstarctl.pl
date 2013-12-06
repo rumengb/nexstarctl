@@ -37,30 +37,77 @@ sub print_help() {
 }
 
 
-sub get_time {
+sub check_align($) {
+	my ($dev) = @_;
+	my $align = tc_check_align($dev);
+	if (!defined $align) {
+		print RED "Error reading from telescope.\n";
+		return undef;
+	} elsif ($align == 0) {
+		print RED "The telescope is NOT aligned. Please complete the alignment routine.\n";
+		return undef;
+	}
+	$verbose && print GREEN "The telescope is aligned.\n";
+}
+
+
+sub init_telescope {
+	my ($tport, $nocheck) = @_;
+	my $dev = open_telescope_port($tport);
+	if (!defined($dev)) {
+		print RED "Can\'t open telescope at $tport: $!\n";
+		return undef;
+	}
+
+	$verbose && print GREEN "The telescope port $tport is open.\n";
+
+	if ($nocheck) {
+		return $dev;
+	}
+
+	if (tc_goto_in_progress($dev)) {
+		print RED "GOTO in progress, try again.\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	return $dev;
+}
+
+sub gettime {
 	my @params = @_;
 	if ($#params <= 0) {
 		if (defined $params[0]) {
 			$port = $params[0];
 		}
 	} else {
-		print RED "Wrong parameters.\n";
+		print RED "gettime: Wrong parameters.\n";
 		return undef;
 	}
 
-	#get time here
-	print time()."\n";
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my ($date, $time, $tz, $isdst) = tc_get_time_str($dev);
+	if (! defined $date) {
+		print RED "gettime: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+	print "$date $time, TZ = $tz, DST = $isdst\n";
+
+	close_telescope_port($dev);
+	return 1;
 }
 
-
-sub set_time {
+sub settime {
 	my @params = @_;
 	my $date;
 	my $tz;
 	my $time;
 	my $isdst;
 
-	if($#params == 2) {
+	if ($#params == 2) {
 		$date = $params[0];
 		$tz = round($params[1]);
 		$isdst = $params[2];
@@ -69,7 +116,7 @@ sub set_time {
 		$date = $params[0];
 		$tz = round($params[1]);
 		$isdst = $params[2];
-		$port = $params[2];
+		$port = $params[3];
 
 	} elsif ($#params <= 0) {
 		if (defined $params[0]) {
@@ -81,31 +128,110 @@ sub set_time {
 		$tz = $tz-1 if ($isdst);
 
 	} else {
-		print RED "Wrong parameters.\n";
+		print RED "settime: Wrong parameters.\n";
 		return undef;
 	}
 
 	if (($tz < -12) or ($tz > 12)) {
-		print RED "Wrong time zone.\n";
+		print RED "settime: Wrong time zone.\n";
 		return undef;
 	}
 
 	# if $date is defined => the date is given by user
 	if (defined $date) {
-		print "USER: ";
 		$time = str2time($date);
 		if (!defined $time) {
-			print RED "Wrong date format.\n";
+			print RED "settime: Wrong date format.\n";
 			return undef;
 		}
 	}
 
-	print "Setting time: ". strftime("%F %T", localtime($time)).", TZ = $tz, isDST = $isdst\n";
-	# set the telescope time here
+	my $dev = init_telescope($port);
+	return undef if (! defined $dev);
 
+	$verbose && print "settime: ". strftime("%F %T", localtime($time)).", TZ = $tz, DST = $isdst\n";
+
+	if (! tc_set_time($dev, $time, $tz, $isdst)) {
+		print RED "settime: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	close_telescope_port($dev);
 	return 1;
 }
 
+sub getlocation {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "getlocation: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my ($lon,$lat) = tc_get_location_str($dev);
+	if (! defined $lon) {
+		print RED "getlocation: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+	print "$lon, $lat\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+sub setlocation {
+	my @params = @_;
+	my $lon;
+	my $lat;
+
+	if ($#params == 1) {
+		$lon = $params[0];
+		$lat = $params[1];
+
+	} elsif ($#params == 2) {
+		$lon = $params[0];
+		$lat = $params[1];
+		$port = $params[3];
+
+	} else {
+		print RED "settime: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $lond = dms2d($lon);
+	if ((!defined $lond) or ($lond > 180) or ($lond < -180)) {
+		print RED "setlocation: Wrong longitude.\n";
+		return undef;
+	}
+
+	my $latd = dms2d($lat);
+	if ((!defined $latd) or ($latd > 180) or ($latd < -180)) {
+		print RED "setlocation: Wrong latitude.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	$verbose && print "setlocation: Lon = $lond, Lat = $latd\n";
+
+	if (! tc_set_location($dev, $lon, $lat)) {
+		print RED "setlocation: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	close_telescope_port($dev);
+	return 1;
+}
 
 sub main() {
 	my %options = ();
@@ -137,26 +263,32 @@ sub main() {
 		print "info issued: $port\n";
 
 	} elsif ($command eq "gettime") {
-		if (! get_time(@ARGV)) {
+		if (! gettime(@ARGV)) {
 			print RED "Get time error.\n";
 			exit 1;
 		}
 		exit 0;
 
 	} elsif ($command eq "settime") {
-		if (! set_time(@ARGV)) {
+		if (! settime(@ARGV)) {
 			print RED "Set time error.\n";
 			exit 1;
-		} else {
-			print GREEN "Time Set Successfully.\n";
-			exit 0;
 		}
+		exit 0;
 
 	} elsif ($command eq "getlocation") {
-		print "getlocation issued: $port\n";
+		if (! getlocation(@ARGV)) {
+			print RED "Get location error.\n";
+			exit 1;
+		}
+		exit 0;
 
 	} elsif ($command eq "setlocation") {
-		print "setlocation issued: $port\n";
+		if (! setlocation(@ARGV)) {
+			print RED "Set location error.\n";
+			exit 1;
+		}
+		exit 0;
 
 	} elsif ($command eq "settrack") {
 		print "settrack issued: $port\n";
@@ -187,7 +319,7 @@ sub main() {
 		exit 0;
 
 	} else {
-		print RED "What?\n";
+		print RED "There is no such command \"$command\".\n";
 	}
 }
 
