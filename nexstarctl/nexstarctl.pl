@@ -223,7 +223,7 @@ sub setlocation {
 
 	$verbose && print "setlocation: Lon = $lond, Lat = $latd\n";
 
-	if (! tc_set_location($dev, $lon, $lat)) {
+	if (! tc_set_location($dev, $lond, $latd)) {
 		print RED "setlocation: Failed. $!\n";
 		close_telescope_port($dev);
 		return undef;
