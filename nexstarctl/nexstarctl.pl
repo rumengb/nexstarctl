@@ -8,11 +8,18 @@ use Getopt::Std;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 
+my $VERSION = "0.1";
+
 my $port;
 my $verbose;
 
 sub print_help() {
-	print "Usage: $0 info [telescope]\n".
+	print "$NexStarCtl::VERSION\n".
+	      "Celestron Nexstar telescope control tool v.$VERSION. Its primary purpose is to illustrate\n".
+	      "how NexStarCtl module can be used, but it is a useful tool for telescope automation.\n",
+	      "This is a GPL software, created by Rumen G. Bogdanovski.\n".
+	      "\n".
+	      "Usage: $0 info [telescope]\n".
 	      "       $0 settime \"DATE TIME\" TZ ISDST [telescope]\n".
 	      "       $0 settime [telescope]\n".
 	      "       $0 gettime [telescope]\n".
@@ -30,7 +37,8 @@ sub print_help() {
 	      "       -v verbose output\n".
 	      "       -h print this help\n".
 	      "[telescope]:\n".
-	      "       Specify the telescope port. Defaults depend on the operating system:\n".
+	      "       The telescope port could be specified with this parameter or TELESCOPE_PORT environment can be set.\n".
+	      "       Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
 	      "          MacOSX: /dev/cu.usbserial\n".
 	      "          Solaris: /dev/ttya\n"
@@ -72,6 +80,20 @@ sub init_telescope {
 	}
 
 	return $dev;
+}
+
+sub info {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "gettime: Wrong parameters.\n";
+		return undef;
+	}
+	print "Module: NexStarCtl v.$NexStarCtl::VERSION\n";
+	return 1;
 }
 
 sub gettime {
@@ -149,7 +171,10 @@ sub settime {
 	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
-	$verbose && print "settime: ". strftime("%F %T", localtime($time)).", TZ = $tz, DST = $isdst\n";
+	my ($s, $m, $h, $day, $mon, $year) = localtime($time);
+	my $time_str = sprintf("%2d:%02d:%02d", $h, $m, $s);
+	my $date_str = sprintf("%02d-%02d-%04d", $day, $mon + 1, $year + 1900);
+	$verbose && print "settime: $date_str $time_str, TZ = $tz, DST = $isdst\n";
 
 	if (! tc_set_time($dev, $time, $tz, $isdst)) {
 		print RED "settime: Failed. $!\n";
@@ -238,12 +263,16 @@ sub main() {
 
 	my $command = shift @ARGV;
 
-	if ($^O eq 'linux') {
-		$port = "/dev/ttyUSB0";
-	} elsif ($^O eq 'darwin') {
-		$port = "/dev/cu.usbserial";
-	} elsif ($^O eq 'solaris') {
-		$port = "/dev/ttya";
+	if (defined $ENV{TELESCOPE_PORT}) {
+		$port = $ENV{TELESCOPE_PORT};
+	} else {
+		if ($^O eq 'linux') {
+			$port = "/dev/ttyUSB0";
+		} elsif ($^O eq 'darwin') {
+			$port = "/dev/cu.usbserial";
+		} elsif ($^O eq 'solaris') {
+			$port = "/dev/ttya";
+		}
 	}
 
 	if (getopts("vh", \%options) == undef) {
@@ -260,7 +289,11 @@ sub main() {
 	}
 
 	if ($command eq "info") {
-		print "info issued: $port\n";
+		if (! info(@ARGV)) {
+			print RED "Get info error.\n";
+			exit 1;
+		}
+		exit 0;
 
 	} elsif ($command eq "gettime") {
 		if (! gettime(@ARGV)) {

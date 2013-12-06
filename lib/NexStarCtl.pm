@@ -51,7 +51,10 @@ NexStar GPS-SA, NexStar iSeries, NexStar SE Series, NexStar GT, CPC, SLT, Advanc
 
 Communication to the hand control is 9600 bits/sec, no parity and one stop bit via the RS-232 port on the base of the
 hand control.
- 
+
+For extended example how to use this perl module look in to the distribution folder for  nexstarctl/nexstarctl.pl.
+This program is a complete console tool to control NexStar telesctopes based on NexStarCtl module.
+
 =cut
 
 package NexStarCtl;
@@ -63,7 +66,7 @@ use strict;
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw( 
-	$version 
+	VERSION
 	
 	DEG2RAD RAD2DEG 
 	notnum precess round 
@@ -104,7 +107,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 
 use constant {
 	TC_TRACK_OFF => 0,
