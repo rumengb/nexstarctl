@@ -14,7 +14,7 @@ my $port;
 my $verbose;
 
 sub print_help() {
-	print "$NexStarCtl::VERSION\n".
+	print "\n".
 	      "Celestron Nexstar telescope control tool v.$VERSION. Its primary purpose is to illustrate\n".
 	      "how NexStarCtl module can be used, but it is a useful tool for telescope automation.\n",
 	      "This is a GPL software, created by Rumen G. Bogdanovski.\n".
@@ -89,10 +89,81 @@ sub info {
 			$port = $params[0];
 		}
 	} else {
-		print RED "gettime: Wrong parameters.\n";
+		print RED "info: Wrong parameters.\n";
 		return undef;
 	}
-	print "Module: NexStarCtl v.$NexStarCtl::VERSION\n";
+
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	print "Driver: NexStarCtl v.$NexStarCtl::VERSION\n";
+
+	my $echo = tc_echo($dev,"X");
+	if ($echo ne "X") {
+		print RED "No telescope mount found on port $port\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+	print "Mount port: $port\n";
+
+	my $model = tc_get_model($dev);
+	if (!defined $model) {
+		print RED "info: Error getting model. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+	my $model_name = get_model_name($model);
+	print "Mount model: $model_name ($model)\n";
+
+	my $version = tc_get_version($dev);
+	if (!defined $version) {
+		print RED "info: Errror getting version. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+	print "HC version: $version\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+sub status {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "status: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my $status = tc_goto_in_progress($dev);
+	if (!defined $status) {
+		print RED "status: Errror getting goto status. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	my $tracking = tc_get_tracking_mode($dev);
+	if (!defined $tracking) {
+		print RED "status: Errror geting tracking mode. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	if (($status == 0) && ($tracking == TC_TRACK_OFF)) {
+		print "Telescope is not tracking.\n";
+	} elsif (($status == 0) && ($tracking != TC_TRACK_OFF)) {
+		print "Telescope is tracking.\n";
+	} else {
+		print "GOTO is in progress.\n";
+	}
+
+	close_telescope_port($dev);
 	return 1;
 }
 
@@ -258,6 +329,69 @@ sub setlocation {
 	return 1;
 }
 
+sub gettrack {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "gettrack: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my $tracking = tc_get_tracking_mode($dev);
+	if (!defined $tracking) {
+		print RED "status: Errror geting tracking mode. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	if ($tracking == TC_TRACK_OFF) {
+		print "Tracking: OFF\n";
+	} elsif ($tracking == TC_TRACK_EQ_SOUTH) {
+		print "Tracking: Equatorial South\n";
+	} elsif ($tracking == TC_TRACK_EQ_NORTH) {
+		print "Tracking: Equatorial North\n";
+	} elsif ($tracking == TC_TRACK_ALT_AZ) {
+		print "Tracking: Aaltazimuthal\n";
+	} else {
+		print "Tracking: Unknown\n";
+	}
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+sub abort {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "gettrack: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my $reult = tc_goto_cancel($dev);
+	if (!defined $reult) {
+		print RED "abort: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+
 sub main() {
 	my %options = ();
 
@@ -290,44 +424,54 @@ sub main() {
 
 	if ($command eq "info") {
 		if (! info(@ARGV)) {
-			print RED "Get info error.\n";
+			$verbose && print RED "Get info returned error.\n";
 			exit 1;
 		}
+		$verbose && print GREEN "Get info succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "gettime") {
 		if (! gettime(@ARGV)) {
-			print RED "Get time error.\n";
+			$verbose && print RED "Get time returned error.\n";
 			exit 1;
 		}
+		$verbose && print GREEN "Get time succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "settime") {
 		if (! settime(@ARGV)) {
-			print RED "Set time error.\n";
+			$verbose && print RED "Set time returned error.\n";
 			exit 1;
 		}
+		$verbose && print GREEN "Set time succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "getlocation") {
 		if (! getlocation(@ARGV)) {
-			print RED "Get location error.\n";
+			$verbose && print RED "Get location returned error.\n";
 			exit 1;
 		}
+		$verbose && print GREEN "Get location succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "setlocation") {
 		if (! setlocation(@ARGV)) {
-			print RED "Set location error.\n";
+			$verbose && print RED "Set location returned error.\n";
 			exit 1;
 		}
+		$verbose && print GREEN "Set location succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "settrack") {
 		print "settrack issued: $port\n";
 
 	} elsif ($command eq "gettrack") {
-		print "gettrack issued: $port\n";
+		if (! gettrack(@ARGV)) {
+			$verbose && print RED "Get track returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "Get track succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "goto") {
 		print "goto issued: $port\n";
@@ -342,10 +486,20 @@ sub main() {
 		print "getazalt issued: $port\n";
 
 	} elsif ($command eq "abort") {
-		print "abort issued: $port\n";
+		if (! abort(@ARGV)) {
+			$verbose && print RED "abort returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "abort succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "status") {
-		print "status issued: $port\n";
+		if (! status(@ARGV)) {
+			$verbose && print RED "Status returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "Status succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "-h") {
 		print_help();

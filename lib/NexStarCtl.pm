@@ -98,7 +98,7 @@ our @EXPORT = qw(
 	TC_TRACK_OFF
 	TC_TRACK_ALT_AZ
 	TC_TRACK_EQ_NORTH
-	TC_REACK_EQ_SOUTH
+	TC_TRACK_EQ_SOUTH
 
 	TC_DIR_POSITIVE
 	TC_DIR_NEGATIVE
@@ -113,7 +113,7 @@ use constant {
 	TC_TRACK_OFF => 0,
 	TC_TRACK_ALT_AZ => 1,
 	TC_TRACK_EQ_NORTH => 2,
-	TC_REACK_EQ_SOUTH => 3,
+	TC_TRACK_EQ_SOUTH => 3,
 	
 	TC_DIR_POSITIVE => 1,
 	TC_DIR_NEGATIVE => 0,
@@ -790,7 +790,7 @@ sub tc_get_tracking_mode($) {
 
 Sets the tracking mode of the mount to one of the folowing:
 TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH, TC_REACK_EQ_SOUTH.
-If the node is not one of the listed -1 is returned.
+If the mode is not one of the listed -1 is returned.
 If no response received undef is returned.
 
 =cut
