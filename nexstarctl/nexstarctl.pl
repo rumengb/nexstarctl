@@ -12,7 +12,8 @@ use strict;
 use NexStarCtl;
 use Date::Parse;
 use Time::Local;
-use POSIX qw( strftime );
+use File::Basename;
+use POSIX qw(strftime);
 use Getopt::Std;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
@@ -23,31 +24,32 @@ my $port;
 my $verbose;
 
 sub print_help() {
+	my $N = basename($0);
 	print "\n".
 	      "Celestron NexStar telescope control tool v.$VERSION. Its primary purpose is to illustrate\n".
 	      "how NexStarCtl module can be used, but it is a useful tool for telescope automation.\n",
 	      "This is a GPL software, created by Rumen G. Bogdanovski.\n".
 	      "\n".
-	      "Usage: $0 info [telescope]\n".
-	      "       $0 settime \"DATE TIME\" TZ ISDST [telescope]\n".
-	      "       $0 settime [telescope]\n".
-	      "       $0 gettime [telescope]\n".
-	      "       $0 setlocation LON LAT [telescope]\n".
-	      "       $0 getlocation [telescope]\n".
-	      "       $0 settrack [north|south|azalt|off] [telescope]\n".
-	      "       $0 gettrack [telescope]\n".
-	      "       $0 goto RA DE [telescope]\n".
-	      "       $0 gotoaz AZ ALT [telescope]\n".
-	      "       $0 getrade [telescope]\n".
-	      "       $0 getazalt [teelescope]\n".
-	      "       $0 abort [telescope]\n".
-	      "       $0 status [telescope]\n".
+	      "Usage: $N info [telescope]\n".
+	      "       $N settime \"DATE TIME\" TZ ISDST [telescope]\n".
+	      "       $N settime [telescope]\n".
+	      "       $N gettime [telescope]\n".
+	      "       $N setlocation LON LAT [telescope]\n".
+	      "       $N getlocation [telescope]\n".
+	      "       $N settrack [north|south|azalt|off] [telescope]\n".
+	      "       $N gettrack [telescope]\n".
+	      "       $N goto RA DE [telescope]\n".
+	      "       $N gotoaz AZ ALT [telescope]\n".
+	      "       $N getrade [telescope]\n".
+	      "       $N getazalt [teelescope]\n".
+	      "       $N abort [telescope]\n".
+	      "       $N status [telescope]\n".
 	      "options:\n".
 	      "       -v verbose output\n".
 	      "       -h print this help\n".
 	      "[telescope]:\n".
-	      "       The telescope port could be specified with this parameter or TELESCOPE_PORT environment can be set.\n".
-	      "       Defaults depend on the operating system:\n".
+	      "       The telescope port could be specified with this parameter or TELESCOPE_PORT\n".
+	      "       environment can be set. Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
 	      "          MacOSX: /dev/cu.usbserial\n".
 	      "          Solaris: /dev/ttya\n"
@@ -492,7 +494,7 @@ sub gotoeq {
 		return undef;
 	}
 
-	print "Going...\n";
+	print "GOTO started...\n";
 
 	close_telescope_port($dev);
 	return 1;
@@ -583,7 +585,7 @@ sub gotoaz {
 		return undef;
 	}
 
-	print "Going...\n";
+	print "GOTO started...\n";
 
 	close_telescope_port($dev);
 	return 1;
@@ -638,6 +640,8 @@ sub abort {
 		close_telescope_port($dev);
 		return undef;
 	}
+
+	$verbose && print "GOTO aborted.\n";
 
 	close_telescope_port($dev);
 	return 1;
