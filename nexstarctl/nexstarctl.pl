@@ -1,4 +1,13 @@
 #!/usr/bin/perl
+###############################################################
+# Celestron NexStar telescope control tool. Its primary purpose
+# is to illustrate how NexStarCtl module can be used, but it is
+# a useful tool for telescope automation.
+#
+# This is a GPL software, created by Rumen G. Bogdanovski.
+#                                              December 1013
+###############################################################
+
 use strict;
 use NexStarCtl;
 use Date::Parse;
@@ -15,7 +24,7 @@ my $verbose;
 
 sub print_help() {
 	print "\n".
-	      "Celestron Nexstar telescope control tool v.$VERSION. Its primary purpose is to illustrate\n".
+	      "Celestron NexStar telescope control tool v.$VERSION. Its primary purpose is to illustrate\n".
 	      "how NexStarCtl module can be used, but it is a useful tool for telescope automation.\n",
 	      "This is a GPL software, created by Rumen G. Bogdanovski.\n".
 	      "\n".
@@ -60,19 +69,20 @@ sub check_align($) {
 
 
 sub init_telescope {
-	my ($tport, $nocheck) = @_;
+	my ($tport, $check) = @_;
 	my $dev = open_telescope_port($tport);
 	if (!defined($dev)) {
-		print RED "Can\'t open telescope at $tport: $!\n";
+		print RED "Can\'t open telescope on port $tport: $!\n";
 		return undef;
 	}
 
 	$verbose && print GREEN "The telescope port $tport is open.\n";
 
-	if ($nocheck) {
+	if (! $check) {
 		return $dev;
 	}
 
+	# Check the telescope is slewing return failure
 	if (tc_goto_in_progress($dev)) {
 		print RED "GOTO in progress, try again.\n";
 		close_telescope_port($dev);
@@ -81,6 +91,7 @@ sub init_telescope {
 
 	return $dev;
 }
+
 
 sub info {
 	my @params = @_;
@@ -93,14 +104,14 @@ sub info {
 		return undef;
 	}
 
-	my $dev = init_telescope($port, 1);
+	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
 	print "Driver: NexStarCtl v.$NexStarCtl::VERSION\n";
 
 	my $echo = tc_echo($dev,"X");
 	if ($echo ne "X") {
-		print RED "No telescope mount found on port $port\n";
+		print RED "info: No telescope mount found on port $port\n";
 		close_telescope_port($dev);
 		return undef;
 	}
@@ -117,7 +128,7 @@ sub info {
 
 	my $version = tc_get_version($dev);
 	if (!defined $version) {
-		print RED "info: Errror getting version. $!\n";
+		print RED "info: Error getting version. $!\n";
 		close_telescope_port($dev);
 		return undef;
 	}
@@ -126,6 +137,7 @@ sub info {
 	close_telescope_port($dev);
 	return 1;
 }
+
 
 sub status {
 	my @params = @_;
@@ -138,19 +150,19 @@ sub status {
 		return undef;
 	}
 
-	my $dev = init_telescope($port, 1);
+	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
 	my $status = tc_goto_in_progress($dev);
 	if (!defined $status) {
-		print RED "status: Errror getting goto status. $!\n";
+		print RED "status: Error getting goto status. $!\n";
 		close_telescope_port($dev);
 		return undef;
 	}
 
 	my $tracking = tc_get_tracking_mode($dev);
 	if (!defined $tracking) {
-		print RED "status: Errror geting tracking mode. $!\n";
+		print RED "status: Error geting tracking mode. $!\n";
 		close_telescope_port($dev);
 		return undef;
 	}
@@ -167,6 +179,7 @@ sub status {
 	return 1;
 }
 
+
 sub gettime {
 	my @params = @_;
 	if ($#params <= 0) {
@@ -178,7 +191,7 @@ sub gettime {
 		return undef;
 	}
 
-	my $dev = init_telescope($port, 1);
+	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
 	my ($date, $time, $tz, $isdst) = tc_get_time_str($dev);
@@ -192,6 +205,7 @@ sub gettime {
 	close_telescope_port($dev);
 	return 1;
 }
+
 
 sub settime {
 	my @params = @_;
@@ -239,7 +253,9 @@ sub settime {
 		}
 	}
 
-	my $dev = init_telescope($port);
+	# Do not set the time if the telescope is slewing
+	# so set second parameter to 1
+	my $dev = init_telescope($port, 1);
 	return undef if (! defined $dev);
 
 	my ($s, $m, $h, $day, $mon, $year) = localtime($time);
@@ -257,6 +273,7 @@ sub settime {
 	return 1;
 }
 
+
 sub getlocation {
 	my @params = @_;
 	if ($#params <= 0) {
@@ -268,7 +285,7 @@ sub getlocation {
 		return undef;
 	}
 
-	my $dev = init_telescope($port, 1);
+	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
 	my ($lon,$lat) = tc_get_location_str($dev);
@@ -282,6 +299,7 @@ sub getlocation {
 	close_telescope_port($dev);
 	return 1;
 }
+
 
 sub setlocation {
 	my @params = @_;
@@ -302,6 +320,7 @@ sub setlocation {
 		return undef;
 	}
 
+	# Convert strings $lon/$lat to decimal $lond/latd in decimal degrees
 	my $lond = dms2d($lon);
 	if ((!defined $lond) or ($lond > 180) or ($lond < -180)) {
 		print RED "setlocation: Wrong longitude.\n";
@@ -314,10 +333,12 @@ sub setlocation {
 		return undef;
 	}
 
+	# do not set location if the telescope is slewing
+	# so set second parameter to 1
 	my $dev = init_telescope($port, 1);
 	return undef if (! defined $dev);
 
-	$verbose && print "setlocation: Lon = $lond, Lat = $latd\n";
+	$verbose && print "setlocation: lon = $lond, lat = $latd\n";
 
 	if (! tc_set_location($dev, $lond, $latd)) {
 		print RED "setlocation: Failed. $!\n";
@@ -328,6 +349,55 @@ sub setlocation {
 	close_telescope_port($dev);
 	return 1;
 }
+
+
+sub settrack {
+	my @params = @_;
+	my $mode;
+
+	if ($#params == 0) {
+		$mode = $params[0];
+
+	} elsif ($#params == 1) {
+		$mode = $params[0];
+		$port = $params[1];
+
+	} else {
+		print RED "settrack: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $tracking;
+
+	if ($mode eq "south") {
+		$tracking = TC_TRACK_EQ_SOUTH;
+	} elsif ($mode eq "north") {
+		$tracking = TC_TRACK_EQ_NORTH;
+	} elsif ($mode eq "azalt") {
+		$tracking = TC_TRACK_ALT_AZ;
+	} elsif ($mode == "off") {
+		$tracking = TC_TRACK_OFF;
+	} else {
+		print "settrack: Wrong parameters.\n";
+	}
+
+	# do not set tracking mode if slewing
+	# so set second parameter to 1
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	if (! tc_set_tracking_mode($dev, $tracking)) {
+		print RED "settrack: Error setting tracking mode. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	$verbose && print "settrack: $mode ($tracking)\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
 
 sub gettrack {
 	my @params = @_;
@@ -340,12 +410,12 @@ sub gettrack {
 		return undef;
 	}
 
-	my $dev = init_telescope($port, 1);
+	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
 	my $tracking = tc_get_tracking_mode($dev);
 	if (!defined $tracking) {
-		print RED "status: Errror geting tracking mode. $!\n";
+		print RED "gettrack: Error geting tracking mode. $!\n";
 		close_telescope_port($dev);
 		return undef;
 	}
@@ -366,6 +436,188 @@ sub gettrack {
 	return 1;
 }
 
+
+sub gotoeq {
+	my @params = @_;
+	my $ra;
+	my $de;
+
+	if ($#params == 1) {
+		$ra = $params[0];
+		$de = $params[1];
+
+	} elsif ($#params == 2) {
+		$ra = $params[0];
+		$de = $params[1];
+		$port = $params[3];
+
+	} else {
+		print RED "goto: Wrong parameters.\n";
+		return undef;
+	}
+
+	# convert strings $ra/$de to $rad/$ded in decimal degrees
+	my $rad = hms2d($ra);
+	if ((!defined $rad) or ($rad > 360) or ($rad < 0)) {
+		print RED "goto: Wrong rightascension.\n";
+		return undef;
+	}
+
+	my $ded = dms2d($de);
+	if ((!defined $ded) or ($ded > 90) or ($ded < -90)) {
+		print RED "goto: Wrong declination.\n";
+		return undef;
+	}
+
+	# if telescope is slewing do nothing
+	# so set second parameter to 1
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my $align = tc_check_align($dev);
+	if (!defined $align) {
+		print RED "goto: Error reading from telescope.\n";
+		return undef;
+	} elsif ($align == 0) {
+		print RED "The telescope is NOT aligned. Please align before GOTO.\n";
+		return undef;
+	}
+	$verbose && print GREEN "The telescope is aligned.\n";
+
+	$verbose && print "goto: ra = $rad, dec = $ded\n";
+
+	if (! tc_goto_rade_p($dev, $rad, $ded)) {
+		print RED "goto: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	print "Going...\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+
+sub getrade {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "getrade: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port);
+	return undef if (! defined $dev);
+
+	my ($ra,$de) = tc_get_rade_p($dev);
+	if (!defined $ra) {
+		print RED "getrade: Error geting ra/de. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	# convert digital degrees $ra/$de to strings and print them
+	print d2hms($ra) . ", " . d2dms($de)."\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+
+sub gotoaz {
+	my @params = @_;
+	my $az;
+	my $alt;
+
+	if ($#params == 1) {
+		$az = $params[0];
+		$alt = $params[1];
+
+	} elsif ($#params == 2) {
+		$az = $params[0];
+		$alt = $params[1];
+		$port = $params[3];
+
+	} else {
+		print RED "gotoaz: Wrong parameters.\n";
+		return undef;
+	}
+
+	# convert strings $az/$alt to $az/$alt in decimal degrees
+	my $azd = dms2d($az);
+	if (!defined $azd) {
+		print RED "gotoaz: Wrong azimuth.\n";
+		return undef;
+	}
+
+	my $altd = dms2d($alt);
+	if ((!defined $altd) or ($altd > 90) or ($altd < -90)) {
+		print RED "gotoaz: Wrong altitude.\n";
+		return undef;
+	}
+
+	# if telescope is slewing do nothing
+	# so set second parameter to 1
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my $align = tc_check_align($dev);
+	if (!defined $align) {
+		print RED "gotoaz: Error reading from telescope.\n";
+		return undef;
+	} elsif ($align == 0) {
+		print RED "The telescope is NOT aligned. Please align before GOTO.\n";
+		return undef;
+	}
+	$verbose && print GREEN "The telescope is aligned.\n";
+
+	$verbose && print "gotoaz: az = $azd, alt = $altd\n";
+
+	if (! tc_goto_azalt_p($dev, $azd, $altd)) {
+		print RED "gotoaz: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	print "Going...\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+
+sub getazalt {
+	my @params = @_;
+	if ($#params <= 0) {
+		if (defined $params[0]) {
+			$port = $params[0];
+		}
+	} else {
+		print RED "getazalt: Wrong parameters.\n";
+		return undef;
+	}
+
+	my $dev = init_telescope($port);
+	return undef if (! defined $dev);
+
+	my ($az,$alt) = tc_get_azalt_p($dev);
+	if (!defined $az) {
+		print RED "getazalt: Error geting az/alt. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	print d2dms($az) . ", " . d2dms($alt)."\n";
+
+	close_telescope_port($dev);
+	return 1;
+}
+
+
 sub abort {
 	my @params = @_;
 	if ($#params <= 0) {
@@ -373,11 +625,11 @@ sub abort {
 			$port = $params[0];
 		}
 	} else {
-		print RED "gettrack: Wrong parameters.\n";
+		print RED "abort: Wrong parameters.\n";
 		return undef;
 	}
 
-	my $dev = init_telescope($port, 1);
+	my $dev = init_telescope($port);
 	return undef if (! defined $dev);
 
 	my $reult = tc_goto_cancel($dev);
@@ -463,7 +715,12 @@ sub main() {
 		exit 0;
 
 	} elsif ($command eq "settrack") {
-		print "settrack issued: $port\n";
+		if (! settrack(@ARGV)) {
+			$verbose && print RED "Set track returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "Set track succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "gettrack") {
 		if (! gettrack(@ARGV)) {
@@ -474,23 +731,43 @@ sub main() {
 		exit 0;
 
 	} elsif ($command eq "goto") {
-		print "goto issued: $port\n";
+		if (! gotoeq(@ARGV)) {
+			$verbose && print RED "GOTO ra/de returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "GOTO ra/de succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "gotoaz") {
-		print "gotoaz issued: $port\n";
+		if (! gotoaz(@ARGV)) {
+			$verbose && print RED "GOTO az/alt returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "GOTO az/alt succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "getrade") {
-		print "getrade issued: $port\n";
+		if (! getrade(@ARGV)) {
+			$verbose && print RED "Get ra/de returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "Get ra/de succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "getazalt") {
-		print "getazalt issued: $port\n";
+		if (! getazalt(@ARGV)) {
+			$verbose && print RED "Get az/alt returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "Get az/alt succeeded.\n";
+		exit 0;
 
 	} elsif ($command eq "abort") {
 		if (! abort(@ARGV)) {
-			$verbose && print RED "abort returned error.\n";
+			$verbose && print RED "Abort returned error.\n";
 			exit 1;
 		}
-		$verbose && print GREEN "abort succeeded.\n";
+		$verbose && print GREEN "Abort succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "status") {
