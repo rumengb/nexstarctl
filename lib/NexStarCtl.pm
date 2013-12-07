@@ -1185,8 +1185,12 @@ sub nex2dd ($){
 	my $d2_factor = hex(substr($nexres, 5, 4)) / 65536;
 	my $d1 = 360 * $d1_factor; 
 	my $d2 = 360 * $d2_factor;
-	$d2 = $d2 + 360 if ($d2 < -90);
-	$d2 = $d2 - 360 if ($d2 > 90);
+
+	# bring $d2 in [-90,+90] range
+	# use 90.00001 to fix some float errors
+	# that lead +90 to be converted to -270
+	$d2 = $d2 + 360 if ($d2 < -90.00001);
+	$d2 = $d2 - 360 if ($d2 > 90.00001);
 
 	return($d1, $d2);
 }
@@ -1203,8 +1207,12 @@ sub pnex2dd ($){
 	my $d2_factor = hex(substr($nexres, 9, 8)) / 0xffffffff;
 	my $d1 = 360 * $d1_factor;
 	my $d2 = 360 * $d2_factor;
-	$d2 = $d2 + 360 if ($d2 < -90);
-	$d2 = $d2 - 360 if ($d2 > 90);
+
+	# bring $d2 in [-90,+90] range
+	# use 90.00001 to fix some float errors
+	# that lead +90 to be converted to -270
+	$d2 = $d2 + 360 if ($d2 < -90.00001);
+	$d2 = $d2 - 360 if ($d2 > 90.00001);
 
 	return($d1, $d2);
 }
