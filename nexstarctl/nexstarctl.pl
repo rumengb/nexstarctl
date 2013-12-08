@@ -5,7 +5,7 @@
 # a useful tool for telescope automation.
 #
 # This is a GPL software, created by Rumen G. Bogdanovski.
-#                                              December 1013
+#                                              December 2013
 ###############################################################
 
 use strict;
