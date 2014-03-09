@@ -60,10 +60,16 @@ This program is a complete console tool to control NexStar telesctopes based on 
 package NexStarCtl;
 
 use POSIX;
-use Device::SerialPort;
 use Time::Local;
 use strict;
 use Exporter;
+
+if ($^O eq "MSWin32") {
+	eval "use Win32::SerialPort"; die $@ if $@;
+} else {
+	eval "use Device::SerialPort"; die $@ if $@;
+}
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw( 
 	VERSION
@@ -109,7 +115,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.10";
+our $VERSION = "0.11";
 
 use constant {
 	TC_TRACK_OFF => 0,
@@ -147,19 +153,25 @@ my %mounts = (
 	20 => "Advanced VX"
 );
 
-=head1 TESCOPE COMMUNICATION
+=head1 TELESCOPE COMMUNICATION
 
 =over 8
 
 =item open_telescope_port(port_name)
 
-Opens a comminication port to the telescope by name (like "/dev/ttyUSB0") and 
+Opens a communication port to the telescope by name (like "/dev/ttyUSB0") and
 returns it to be used in other finctions. In case of error undef is returned.
 
 =cut
 sub open_telescope_port($) {
 	my ($tty) = @_;
-	my $port = new Device::SerialPort($tty);
+
+	my $port;
+	if ($^O eq "MSWin32") {
+		$port = new Win32::SerialPort($tty);
+	} else {
+		$port = new Device::SerialPort($tty);
+	}
 	if (! defined $port) {return undef;} 	
 	#$port->debug(1);
 	$port->baudrate(9600); 
@@ -232,7 +244,7 @@ sub close_telescope_port($) {
 
 =item tc_check_align(port)
 
-If the telescope is aligned 1 is returned else 0 is returned. If no response received 
+If the telescope is aligned 1 is returned else 0 is returned. If no response received,
 undef is returned.
 
 =cut
@@ -255,7 +267,7 @@ sub tc_check_align($) {
 Slew the telescope to RA/DEC coordinates ra, de (in decimal degrees). 
 Function tc_goto_rade_p uses precise GOTO.
 If RA is not in [0;360] function returns -1. If DEC is not in [-90;90] -2 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_goto_rade {
@@ -292,7 +304,7 @@ sub tc_goto_rade_p {
 
 Slew the telescope to AZ/ALT coordinates az, alt (in decimal degrees). Function tc_goto_azalt_p uses precise GOTO.
 If AZ is not in [0;360] function returns -1. If ALT is not in [-90;90] -2 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_goto_azalt {
@@ -328,7 +340,7 @@ sub tc_goto_azalt_p {
 =item tc_get_rade_p(port)
 
 Returns the the current telescope RA/DEC coordinates ra, de (in decimal degrees). Function 
-tc_get_rade_p uses precise GET. If no response received undef is returned.
+tc_get_rade_p uses precise GET. If no response received, undef is returned.
 
 =cut
 sub tc_get_rade {
@@ -365,7 +377,7 @@ sub tc_get_rade_p {
 =item tc_get_azalt_p(port)
 
 Returns the the currents telescope AZ/ALT coordinates az, alt (in decimal degrees). Function 
-tc_get_azalt_p uses precise GET. If no response received undef is returned.
+tc_get_azalt_p uses precise GET. If no response received, undef is returned.
 
 =cut
 sub tc_get_azalt {
@@ -403,7 +415,7 @@ sub tc_get_azalt_p {
 
 Syncs the telescope to RA/DEC coordinates ra, de (in decimal degrees). Function tc_goto_azalt_p uses precise sync.
 If RA is not in [0;360] function returns -1. If DEC is not in [-90;90] -2 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_sync_rade {
@@ -436,7 +448,7 @@ sub tc_sync_rade_p {
 
 =item tc_goto_in_progress(port)
 
-Returns 1 if GOTO is in progress else 0 is returned. If no response received undef is returned.
+Returns 1 if GOTO is in progress else 0 is returned. If no response received, undef is returned.
 
 =cut
 sub tc_goto_in_progress($) {
@@ -453,7 +465,7 @@ sub tc_goto_in_progress($) {
 
 =item tc_goto_cancel(port)
 
-Cancels the GOTO operation. On success 1 is returned. If no response received undef is returned.
+Cancels the GOTO operation. On success 1 is returned. If no response received, undef is returned.
 
 =cut
 sub tc_goto_cancel($) {
@@ -471,7 +483,7 @@ sub tc_goto_cancel($) {
 =item tc_echo(port, char)
 
 Checks the communication with the telecope. This function sends char to the telescope and 
-returns the echo received. If no response received undef is returned.
+returns the echo received. If no response received, undef is returned.
 
 =cut
 sub tc_echo($$) {
@@ -489,7 +501,7 @@ sub tc_echo($$) {
 =item tc_get_model(port)
 
 This function returns the mount model as a number. See CELESTRON documentation.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_get_model($) {
@@ -507,7 +519,7 @@ sub tc_get_model($) {
 =item tc_get_version(port)
 
 This function returns the mount version as a number. See CELESTRON documentation.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_get_version($) {
@@ -528,12 +540,12 @@ sub tc_get_version($) {
 
 This function returns the stored location coordinates lon, lat in decimal degrees. 
 Negative longitude is WEST. Negative latitude is SOUTH.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =item tc_get_location_str(port)
 
 This function returns the stored location coordinates lon and lat as strings.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_get_location {
@@ -587,7 +599,7 @@ sub tc_get_location_str {
 This function sets the location coordinates lon, lat in decimal degrees. 
 Negative longitude is WEST. Negative latitude is SOUTH.
 If the coordinates are invalid -1 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_set_location {
@@ -632,12 +644,12 @@ sub tc_set_location {
 =item tc_get_time(port)
 
 This function returns the stored time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
-If no response received undef is returned. 
+If no response received, undef is returned.
 
 =item tc_get_time_str(port)
 
 This function returns the stored date, time (as strings), timezone (in hours) and daylight saving time(0|1).
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 
@@ -678,7 +690,7 @@ sub tc_get_time_str {
 
 This function sets the time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
 On success 1 is returned.
-If no response received undef is returned. If the mount is known to have RTC
+If no response received, undef is returned. If the mount is known to have RTC
 (currently only CGE and AdvancedVX) the date/time is set to RTC too.
 
 =cut
@@ -773,7 +785,7 @@ sub tc_set_time {
 
 Reads the tracking mode of the mount and returns one of the folowing:
 TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH, TC_REACK_EQ_SOUTH.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_get_tracking_mode($) {
@@ -793,7 +805,7 @@ sub tc_get_tracking_mode($) {
 Sets the tracking mode of the mount to one of the folowing:
 TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH, TC_REACK_EQ_SOUTH.
 If the mode is not one of the listed -1 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_set_tracking_mode($$) {
@@ -821,7 +833,7 @@ TC_DIR_POSITIVE and TC_DIR_NEGATIVE. Rate is from 0 to 9. Where 0 stops slewing 
 the fastest speed.
 
 On success 1 is returned. If rate is out of range -1 is returned. 
-If no response received undef is returned.
+If no response received, undef is returned.
 
 =cut
 sub tc_slew_fixed {
@@ -869,7 +881,7 @@ Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT. Direction can ac
 TC_DIR_POSITIVE and TC_DIR_NEGATIVE. Rate is the speed in arcsec/sec. For example 3600 
 represents 1degree/sec. 
 
-On success 1 is returned. If no response received undef is returned.
+On success 1 is returned. If no response received, undef is returned.
 
 =cut
 sub tc_slew_variable {
@@ -925,7 +937,7 @@ sub get_model_name($) {
 
 =head1 AUX COMMANDS
 
-The following commands are not officially documented by Celestron. Please note tat these
+The following commands are not officially documented by Celestron. Please note that these
 commands are reverse engineered and may not work exactly as expected.
 
 =over 8
@@ -937,7 +949,7 @@ Get autoguide rate for the given axis in percents of the sidereal rate.
 Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT.
 
 On success current value of autoguide rate is returned in the range [0-99].
-If no response received undef is returned.
+If no response received, undef is returned.
 =cut
 sub tc_get_autoguide_rate($$) {
 	my ($port,$axis) = @_;
@@ -974,7 +986,7 @@ Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT.
 Rate must be in the range [0-99].
 
 On success 1 is returned. If rate is out of range -1 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 =cut
 sub tc_set_autoguide_rate($$$) {
 	my ($port,$axis,$rate) = @_;
@@ -1027,7 +1039,7 @@ Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT. Direction
 can accept values TC_DIR_POSITIVE and TC_DIR_NEGATIVE.
 
 On success current value of backlash is returned in the range [0-99].
-If no response received undef is returned.
+If no response received, undef is returned.
 =cut
 sub tc_get_backlash($$$) {
 	my ($port,$axis,$direction) = @_;
@@ -1069,7 +1081,7 @@ Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT. Direction can ac
 values TC_DIR_POSITIVE and TC_DIR_NEGATIVE. Backlash must be in the range [0-99].
 
 On success 1 is returned. If backlash is out of range -1 is returned.
-If no response received undef is returned.
+If no response received, undef is returned.
 =cut
 sub tc_set_backlash($$$$) {
 	my ($port,$axis,$direction,$backlash) = @_;
@@ -1301,7 +1313,7 @@ sub d2dm($)
 =item dms2d(string)
 
 converts string of the format "dd:mm:ss" to decimal degrees. If the string format 
-is invalid format undef is returned.
+is invalid format, undef is returned.
 
 =cut
 sub dms2d($)
@@ -1333,7 +1345,7 @@ sub dms2d($)
 =item hms2d(string)
 
 Converts string of the format "hh:mm:ss" to decimal degrees. If the string format 
-is invalid format undef is returned.
+is invalid format, undef is returned.
 
 =cut
 sub hms2d($)

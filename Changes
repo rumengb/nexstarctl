@@ -1,5 +1,9 @@
 Revision history for Perl extension NexStarCtl.
 
+      Mon Mar 10 01:25:12 2014
+	- initial port to Windows OS.
+	- fix several typos
+
 0.10  Sun Mar  9 21:20:07 2014
 	- added aux commands tc_get_autoguide_rate
 	  tc_set_autoguide_rate tc_get_backlash tc_set_backlash
