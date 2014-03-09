@@ -1,5 +1,9 @@
 Revision history for Perl extension NexStarCtl.
 
+0.10  Sun Mar  9 21:20:07 2014
+	- added aux commands tc_get_autoguide_rate
+	  tc_set_autoguide_rate tc_get_backlash tc_set_backlash
+
 0.09  Sat Dec  7 22:21:45 2013
 	- created nexstarctl.pl tool
 	- small fixes to NexStarCtl.pm

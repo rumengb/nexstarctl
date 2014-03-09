@@ -4,7 +4,7 @@
 # NexCtl - NexStar control library
 # 
 # 
-#		     (c)2013 by Rumen G.Bogdanovski
+#		     (c)2013-2014 by Rumen G.Bogdanovski
 ########################################################
 
 =head1 NAME
@@ -94,6 +94,8 @@ our @EXPORT = qw(
 	tc_set_time tc_set_location
 	tc_get_tracking_mode tc_set_tracking_mode
 	tc_slew_variable tc_slew_fixed
+	tc_get_autoguide_rate tc_set_autoguide_rate
+	tc_get_backlash tc_set_backlash
 
 	TC_TRACK_OFF
 	TC_TRACK_ALT_AZ
@@ -107,7 +109,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.09";
+our $VERSION = "0.10";
 
 use constant {
 	TC_TRACK_OFF => 0,
@@ -888,7 +890,7 @@ sub tc_slew_variable {
 	$rate = int(4*$rate);
 	my $rateH = int($rate / 256);
 	my $rateL = $rate % 256;
-	print "RATEf : $rateH $rateL\n";
+	#print "RATEf : $rateH $rateL\n";
 
 	$port->write("P");
 	$port->write(chr(3));
@@ -917,6 +919,193 @@ If the mount is not known undef is returned.
 sub get_model_name($) {
 	my ($model_id) = @_;
 	return $mounts{$model_id};
+}
+
+=back
+
+=head1 AUX COMMANDS
+
+The following commands are not officially documented by Celestron. Please note tat these
+commands are reverse engineered and may not work exactly as expected.
+
+=over 8
+
+=item tc_get_autoguide_rate(port, axis)
+
+Get autoguide rate for the given axis in percents of the sidereal rate.
+
+Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT.
+
+On success current value of autoguide rate is returned in the range [0-99].
+If no response received undef is returned.
+=cut
+sub tc_get_autoguide_rate($$) {
+	my ($port,$axis) = @_;
+
+	if ($axis > 0) {
+		$axis = _TC_AXIS_RA_AZM;
+	} else {
+		$axis = _TC_AXIS_DE_ALT;
+	}
+
+	$port->write("P");
+	$port->write(chr(2));
+	$port->write(chr($axis));
+	$port->write(chr(0x47)); # Get autoguide rate
+	$port->write(chr(0));
+	$port->write(chr(0));
+	$port->write(chr(0));
+	$port->write(chr(1));
+
+	my $response = read_telescope($port, 2);
+	if (defined $response) {
+		my $rate = ord(substr($response, 0, 1));
+		return int(100 * $rate / 256);
+	} else {
+		return undef;
+	}
+}
+
+=item tc_set_autoguide_rate(port, axis, rate)
+
+Set autoguide rate for the given axis in percents of the sidereal rate.
+
+Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT.
+Rate must be in the range [0-99].
+
+On success 1 is returned. If rate is out of range -1 is returned.
+If no response received undef is returned.
+=cut
+sub tc_set_autoguide_rate($$$) {
+	my ($port,$axis,$rate) = @_;
+
+	if ($axis > 0) {
+		$axis = _TC_AXIS_RA_AZM;
+	} else {
+		$axis = _TC_AXIS_DE_ALT;
+	}
+
+	# $rate should be [0%-99%]
+	my $rate = int($rate);
+	if (($rate < 0) or ($rate > 99)) {
+		return -1;
+	}
+
+	# This is wired, but is done to match as good as
+	# possible the values given by the HC
+	my$rrate;
+	if ($rate == 0) {
+		$rrate = 0;
+	} elsif ($rate == 99) {
+		$rrate = 255;
+	} else {
+		$rrate = int((256 * $rate / 100) + 1);
+	}
+
+	$port->write("P");
+	$port->write(chr(2));
+	$port->write(chr($axis));
+	$port->write(chr(0x46)); # Set autoguide rate
+	$port->write(chr($rrate));
+	$port->write(chr(0));
+	$port->write(chr(0));
+	$port->write(chr(0));
+
+	my $response = read_telescope($port, 1);
+	if (defined $response) {
+		return 1;
+	} else {
+		return undef;
+	}
+}
+
+=item tc_get_backlash(port, axis, direction)
+
+Get anti-backlash values for the specified axis in a given direction.
+
+Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT. Direction
+can accept values TC_DIR_POSITIVE and TC_DIR_NEGATIVE.
+
+On success current value of backlash is returned in the range [0-99].
+If no response received undef is returned.
+=cut
+sub tc_get_backlash($$$) {
+	my ($port,$axis,$direction) = @_;
+
+	if ($axis > 0) {
+		$axis = _TC_AXIS_RA_AZM;
+	} else {
+		$axis = _TC_AXIS_DE_ALT;
+	}
+
+	if ($direction > 0) {
+		$direction = 0x40; # Get positive backlash
+	} else {
+		$direction = 0x41; # Get negative backlash
+	}
+
+	$port->write("P");
+	$port->write(chr(2));
+	$port->write(chr($axis));
+	$port->write(chr($direction));
+	$port->write(chr(0));
+	$port->write(chr(0));
+	$port->write(chr(0));
+	$port->write(chr(1));
+
+	my $response = read_telescope($port, 2);
+	if (defined $response) {
+		return ord(substr($response, 0, 1));
+	} else {
+		return undef;
+	}
+}
+
+=item tc_set_backlash(port, axis, direction, backlash)
+
+Set anti-backlash values for the specified axis in a given direction.
+
+Accepted values for axis are TC_AXIS_RA_AZM and TC_AXIS_DE_ALT. Direction can accept
+values TC_DIR_POSITIVE and TC_DIR_NEGATIVE. Backlash must be in the range [0-99].
+
+On success 1 is returned. If backlash is out of range -1 is returned.
+If no response received undef is returned.
+=cut
+sub tc_set_backlash($$$$) {
+	my ($port,$axis,$direction,$backlash) = @_;
+
+	if ($axis > 0) {
+		$axis = _TC_AXIS_RA_AZM;
+	} else {
+		$axis = _TC_AXIS_DE_ALT;
+	}
+
+	if ($direction > 0) {
+		$direction = 0x10; # Set positive backlash
+	} else {
+		$direction = 0x11; # Set negative backlash
+	}
+
+	my $backlash = int($backlash);
+	if (($backlash < 0) or ($backlash > 99)) {
+		return -1;
+	}
+
+	$port->write("P");
+	$port->write(chr(2));
+	$port->write(chr($axis));
+	$port->write(chr($direction));
+	$port->write(chr($backlash));
+	$port->write(chr(0));
+	$port->write(chr(0));
+	$port->write(chr(0));
+
+	my $response = read_telescope($port, 1);
+	if (defined $response) {
+		return 1;
+	} else {
+		return undef;
+	}
 }
 
 =back
@@ -1256,7 +1445,12 @@ sub dd2pnex ($$) {
 
 =head1 SEE ALSO
 
+For more information about the NexStar commands please refer to the original
+protocol specification described here:
 http://www.celestron.com/c3/images/files/downloads/1154108406_nexstarcommprot.pdf
+
+The undocumented commands are described here:
+http://www.paquettefamily.ca/nexstar/NexStar_AUX_Commands_10.pdf
 
 =head1 AUTHOR
 
@@ -1264,12 +1458,11 @@ Rumen Bogdanovski, E<lt>rumen@skyarchive.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2013 by Rumen Bogdanovski
+Copyright (C) 2013-2014 by Rumen Bogdanovski
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.12.4 or,
 at your option, any later version of Perl 5 you may have available.
-
 
 =cut
 

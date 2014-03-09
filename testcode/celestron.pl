@@ -91,6 +91,22 @@ print "$date, $time, $tz, $dst\n";
 #my ($azp,$altp) = tc_get_azalt_p($port);
 #my ($az,$alt) = tc_get_azalt($port);
 
+#print "Set RA(+) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,0) . "\n";
+#print "Set RA(-) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0) . "\n";
+#print "Set DE(+) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0) . "\n";
+#print "Set DE(-) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE,0) . "\n";
+
+#print "Get RA(+) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE) . "\n";
+
+print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
+print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
+
+print "Set RA autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_RA_AZM,50) . "\n";
+print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
+
+print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,50) . "\n";
+print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
+
 close_telescope_port($port);
 
 
