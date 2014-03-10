@@ -1390,8 +1390,8 @@ sub nex2dd ($){
 	# bring $d2 in [-90,+90] range
 	# use 90.00001 to fix some float errors
 	# that lead +90 to be converted to -270
-	$d2 = $d2 + 360 if ($d2 < -90.00001);
-	$d2 = $d2 - 360 if ($d2 > 90.00001);
+	$d2 = $d2 + 360 if ($d2 < -90.0002);
+	$d2 = $d2 - 360 if ($d2 > 90.0002);
 
 	return($d1, $d2);
 }
@@ -1412,8 +1412,8 @@ sub pnex2dd ($){
 	# bring $d2 in [-90,+90] range
 	# use 90.00001 to fix some float errors
 	# that lead +90 to be converted to -270
-	$d2 = $d2 + 360 if ($d2 < -90.00001);
-	$d2 = $d2 - 360 if ($d2 > 90.00001);
+	$d2 = $d2 + 360 if ($d2 < -90.0002);
+	$d2 = $d2 - 360 if ($d2 > 90.0002);
 
 	return($d1, $d2);
 }
@@ -1427,6 +1427,7 @@ string (in fraction of a revolution) of the format "34AB,12CE".
 =cut
 sub dd2nex ($$) {
 	my ($d1, $d2) = @_;
+	$d1 = $d1 + 360 if ($d1 < 0);
 	$d2 = $d2 + 360 if ($d2 < 0);
 	my $d2_factor = $d2 / 360;
 	my $d1_factor = $d1 / 360;
@@ -1444,6 +1445,7 @@ coordinate string (in fraction of a revolution) of the format "12AB0500,40000500
 =cut
 sub dd2pnex ($$) {
 	my ($d1, $d2) = @_;
+	$d1 = $d1 + 360 if ($d1 < 0);
 	$d2 = $d2 + 360 if ($d2 < 0);
 	my $d2_factor = $d2 / 360;
 	my $d1_factor = $d1 / 360;
