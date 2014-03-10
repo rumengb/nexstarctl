@@ -1427,10 +1427,16 @@ string (in fraction of a revolution) of the format "34AB,12CE".
 =cut
 sub dd2nex ($$) {
 	my ($d1, $d2) = @_;
+
+	# bring $d1,$d2 in the range [0-360]
+	$d1 = $d1 - 360 * int($d1/360);
+	$d2 = $d2 - 360 * int($d2/360);
 	$d1 = $d1 + 360 if ($d1 < 0);
 	$d2 = $d2 + 360 if ($d2 < 0);
+
 	my $d2_factor = $d2 / 360;
 	my $d1_factor = $d1 / 360;
+
 	my $nex1 = int($d1_factor*65536);
 	my $nex2 = int($d2_factor*65536);
 
@@ -1445,10 +1451,16 @@ coordinate string (in fraction of a revolution) of the format "12AB0500,40000500
 =cut
 sub dd2pnex ($$) {
 	my ($d1, $d2) = @_;
+
+	# bring $d1,$d2 in the range [0-360]
+	$d1 = $d1 - 360 * int($d1/360);
+	$d2 = $d2 - 360 * int($d2/360);
 	$d1 = $d1 + 360 if ($d1 < 0);
 	$d2 = $d2 + 360 if ($d2 < 0);
+
 	my $d2_factor = $d2 / 360;
 	my $d1_factor = $d1 / 360;
+
 	my $nex1 = int($d1_factor*0xffffffff);
 	my $nex2 = int($d2_factor*0xffffffff);
 
