@@ -379,10 +379,11 @@ sub settrack {
 		$tracking = TC_TRACK_EQ_NORTH;
 	} elsif ($mode eq "azalt") {
 		$tracking = TC_TRACK_ALT_AZ;
-	} elsif ($mode == "off") {
+	} elsif ($mode eq "off") {
 		$tracking = TC_TRACK_OFF;
 	} else {
-		print "settrack: Wrong parameters.\n";
+		print RED "settrack: Wrong parameters.\n";
+		return undef;
 	}
 
 	# do not set tracking mode if slewing
