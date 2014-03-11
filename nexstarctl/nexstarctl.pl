@@ -15,16 +15,9 @@ use Time::Local;
 use File::Basename;
 use POSIX qw(strftime);
 use Getopt::Std;
-
-if ($^O ne "MSWin32") {
-	# On Other than Windows use colorful output
-	eval "use Term::ANSIColor qw(:constants);"; die $@ if $@;
-	$Term::ANSIColor::AUTORESET = 1;
-} else {
-	# On Windows redirect RED and GREEN to stdout
-	open(RED, ">>&=", 1);
-	open(GREEN, ">>&=", 1);
-}
+use if $^O eq "MSWin32", "Win32::Console::ANSI";
+use Term::ANSIColor qw(:constants);
+$Term::ANSIColor::AUTORESET = 1;
 
 my $VERSION = "0.2";
 
@@ -59,7 +52,7 @@ sub print_help() {
 	      "       The telescope port could be specified with this parameter or TELESCOPE_PORT\n".
 	      "       environment can be set. Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
-	      "          MacOSX: /dev/cu.usbserial\n".
+	      "          MacOSX: /dev/tty.usbserial\n".
 	      "          Solaris: /dev/ttya\n".
 	      "          Windows: COM1\n";
 }
@@ -324,7 +317,7 @@ sub setlocation {
 	} elsif ($#params == 2) {
 		$lon = $params[0];
 		$lat = $params[1];
-		$port = $params[3];
+		$port = $params[2];
 
 	} else {
 		print RED "settime: Wrong parameters.\n";
@@ -460,7 +453,7 @@ sub gotoeq {
 	} elsif ($#params == 2) {
 		$ra = $params[0];
 		$de = $params[1];
-		$port = $params[3];
+		$port = $params[2];
 
 	} else {
 		print RED "goto: Wrong parameters.\n";
@@ -551,7 +544,7 @@ sub gotoaz {
 	} elsif ($#params == 2) {
 		$az = $params[0];
 		$alt = $params[1];
-		$port = $params[3];
+		$port = $params[2];
 
 	} else {
 		print RED "gotoaz: Wrong parameters.\n";
@@ -668,7 +661,7 @@ sub main() {
 		if ($^O eq 'linux') {
 			$port = "/dev/ttyUSB0";
 		} elsif ($^O eq 'darwin') {
-			$port = "/dev/cu.usbserial";
+			$port = "/dev/tty.usbserial";
 		} elsif ($^O eq 'solaris') {
 			$port = "/dev/ttya";
 		} elsif ($^O eq 'MSWin32') {

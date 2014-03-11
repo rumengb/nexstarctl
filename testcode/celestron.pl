@@ -12,6 +12,7 @@ use NexStarCtl;
 #print get_model_name(19)."\n";
 
 my $port = open_telescope_port("/dev/cu.usbserial"); 
+#my $port = open_telescope_port("/dev/tty.NoZAP-PL2303-00004006");
 
 if (!defined $port) {
 	print "Can not open communication port.\n";
