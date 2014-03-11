@@ -15,10 +15,18 @@ use Time::Local;
 use File::Basename;
 use POSIX qw(strftime);
 use Getopt::Std;
-use Term::ANSIColor qw(:constants);
-$Term::ANSIColor::AUTORESET = 1;
 
-my $VERSION = "0.1";
+if ($^O ne "MSWin32") {
+	# On Other than Windows use colorful output
+	eval "use Term::ANSIColor qw(:constants);"; die $@ if $@;
+	$Term::ANSIColor::AUTORESET = 1;
+} else {
+	# On Windows redirect RED and GREEN to stdout
+	open(RED, ">>&=", 1);
+	open(GREEN, ">>&=", 1);
+}
+
+my $VERSION = "0.2";
 
 my $port;
 my $verbose;
@@ -52,7 +60,8 @@ sub print_help() {
 	      "       environment can be set. Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
 	      "          MacOSX: /dev/cu.usbserial\n".
-	      "          Solaris: /dev/ttya\n"
+	      "          Solaris: /dev/ttya\n".
+	      "          Windows: COM1\n";
 }
 
 
@@ -662,6 +671,8 @@ sub main() {
 			$port = "/dev/cu.usbserial";
 		} elsif ($^O eq 'solaris') {
 			$port = "/dev/ttya";
+		} elsif ($^O eq 'MSWin32') {
+			$port = "COM1";
 		}
 	}
 
