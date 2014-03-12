@@ -205,7 +205,12 @@ sub read_telescope($$) {
 		$response .= $char;
 	} while ($total < $len);
 	
-	if ($char ne "#") { return undef; }
+	# if the last byte is not '#', this means that the device did
+	# not respond and the next byte should be '#' (hopefully)
+	if ($char ne "#") {
+		($count,$char)=$port->read(1);
+		return undef;
+	}
 	return $response;
 }
 
@@ -962,7 +967,7 @@ sub tc_get_autoguide_rate($$) {
 	}
 
 	$port->write("P");
-	$port->write(chr(2));
+	$port->write(chr(1));
 	$port->write(chr($axis));
 	$port->write(chr(0x47)); # Get autoguide rate
 	$port->write(chr(0));
@@ -1058,7 +1063,7 @@ sub tc_get_backlash($$$) {
 	}
 
 	$port->write("P");
-	$port->write(chr(2));
+	$port->write(chr(1));
 	$port->write(chr($axis));
 	$port->write(chr($direction));
 	$port->write(chr(0));
