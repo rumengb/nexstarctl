@@ -150,6 +150,7 @@ my %mounts = (
 	10 => "GT",
 	11 => "NexStar 4/5 SE",
 	12 => "NexStar 6/8 SE",
+	14 => "CGEM",
 	20 => "Advanced VX"
 );
 
