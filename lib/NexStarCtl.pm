@@ -266,11 +266,8 @@ sub tc_pass_through_cmd($$$$$$$$) {
 	$port->write(chr($data3));
 	$port->write(chr($res_len));
 
-	my $response = read_telescope($port, 1);
-	if (! defined $response) {
-		return undef;
-	}
-	return $response;
+	#we should read $res_len + 1 byes to accomodate '#' at the end
+	return read_telescope($port, $res_len + 1);
 }
 
 =item tc_check_align(port)
