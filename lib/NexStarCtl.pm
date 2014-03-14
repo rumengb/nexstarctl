@@ -85,6 +85,7 @@ our @EXPORT = qw(
 	close_telescope_port
 	read_telescope 
 
+	tc_pass_through_cmd
 	tc_check_align
 	tc_goto_rade tc_goto_rade_p
 	tc_goto_azalt tc_goto_azalt_p
@@ -115,7 +116,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
 use constant {
 	TC_TRACK_OFF => 0,
@@ -247,6 +248,30 @@ sub close_telescope_port($) {
 =head1 TELESCOPE COMMANDS
 
 =over 8
+
+=item tc_pass_through_cmd(port, msg_len, dest_id, cmd_id, data1, data2, data3, res_len)
+
+(TBD)
+
+=cut
+sub tc_pass_through_cmd($$$$$$$$) {
+	my ($port, $msg_len, $dest_id, $cmd_id, $data1, $data2, $data3, $res_len) = @_;
+
+	$port->write("P");
+	$port->write(chr($msg_len));
+	$port->write(chr($dest_id));
+	$port->write(chr($cmd_id));
+	$port->write(chr($data1));
+	$port->write(chr($data2));
+	$port->write(chr($data3));
+	$port->write(chr($res_len));
+
+	my $response = read_telescope($port, 1);
+	if (! defined $response) {
+		return undef;
+	}
+	return $response;
+}
 
 =item tc_check_align(port)
 
@@ -740,46 +765,21 @@ sub tc_set_time {
 		my ($s,$m,$h,$day,$mon,$year,$wday,$yday,$isdst) = localtime($time - (($timezone + $dst) * 3600));
 
 		# Set year
-		$port->write("P");
-		$port->write(chr(3));
-		$port->write(chr(178));
-		$port->write(chr(132));
-		$port->write(chr(int(($year + 1900) / 256)));
-		$port->write(chr(int(($year + 1900) % 256)));
-		$port->write(chr(0));
-		$port->write(chr(0));
-
-		my $response = read_telescope($port, 1);
+		my $response = tc_pass_through_cmd($port, 3, 178, 132,
+		                                   int(($year + 1900) / 256),
+		                                   int(($year + 1900) % 256), 0, 0);
 		if (! defined $response) {
 			return undef;
 		}
 
 		# Set month and day
-		$port->write("P");
-		$port->write(chr(3));
-		$port->write(chr(178));
-		$port->write(chr(131));
-		$port->write(chr($mon+1));
-		$port->write(chr($day));
-		$port->write(chr(0));
-		$port->write(chr(0));
-
-		my $response = read_telescope($port, 1);
+		my $response = tc_pass_through_cmd($port, 3, 178, 131, $mon+1, $day, 0, 0);
 		if (! defined $response) {
 			return undef;
 		}
 
 		# Set time
-		$port->write("P");
-		$port->write(chr(4));
-		$port->write(chr(178));
-		$port->write(chr(179));
-		$port->write(chr($h));
-		$port->write(chr($m));
-		$port->write(chr($s));
-		$port->write(chr(0));
-
-		my $response = read_telescope($port, 1);
+		my $response = tc_pass_through_cmd($port, 4, 178, 179, $h, $m, $s, 0);
 		if (! defined $response) {
 			return undef;
 		}
@@ -861,17 +861,8 @@ sub tc_slew_fixed {
 		return -1;
 	}
 	$rate = int($rate);
-	
-	$port->write("P");
-	$port->write(chr(2));
-	$port->write(chr($axis));
-	$port->write(chr($direction));
-	$port->write(chr($rate));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	
-	my $response = read_telescope($port, 1);
+
+	my $response = tc_pass_through_cmd($port, 2, $axis, $direction, $rate, 0, 0, 0);
 	if (defined $response) {
 		return 1;
 	} else {
@@ -910,16 +901,7 @@ sub tc_slew_variable {
 	my $rateL = $rate % 256;
 	#print "RATEf : $rateH $rateL\n";
 
-	$port->write("P");
-	$port->write(chr(3));
-	$port->write(chr($axis));
-	$port->write(chr($direction));
-	$port->write(chr($rateH));
-	$port->write(chr($rateL));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	
-	my $response = read_telescope($port, 1);
+	my $response = tc_pass_through_cmd($port, 3, $axis, $direction, $rateH, $rateL, 0, 0);
 	if (defined $response) {
 		return 1;
 	} else {
@@ -966,16 +948,8 @@ sub tc_get_autoguide_rate($$) {
 		$axis = _TC_AXIS_DE_ALT;
 	}
 
-	$port->write("P");
-	$port->write(chr(1));
-	$port->write(chr($axis));
-	$port->write(chr(0x47)); # Get autoguide rate
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(1));
-
-	my $response = read_telescope($port, 2);
+	# Get autoguide rate (0x47)
+	my $response = tc_pass_through_cmd($port, 1, $axis, 0x47, 0, 0, 0, 1);
 	if (defined $response) {
 		my $rate = ord(substr($response, 0, 1));
 		return int(100 * $rate / 256);
@@ -1020,16 +994,8 @@ sub tc_set_autoguide_rate($$$) {
 		$rrate = int((256 * $rate / 100) + 1);
 	}
 
-	$port->write("P");
-	$port->write(chr(2));
-	$port->write(chr($axis));
-	$port->write(chr(0x46)); # Set autoguide rate
-	$port->write(chr($rrate));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(0));
-
-	my $response = read_telescope($port, 1);
+	# Set autoguide rate (0x46)
+	my $response = tc_pass_through_cmd($port, 2, $axis, 0x46, $rrate, 0, 0, 0);
 	if (defined $response) {
 		return 1;
 	} else {
@@ -1062,16 +1028,7 @@ sub tc_get_backlash($$$) {
 		$direction = 0x41; # Get negative backlash
 	}
 
-	$port->write("P");
-	$port->write(chr(1));
-	$port->write(chr($axis));
-	$port->write(chr($direction));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(1));
-
-	my $response = read_telescope($port, 2);
+	my $response =  tc_pass_through_cmd($port, 1, $axis, $direction, 0, 0, 0, 1);
 	if (defined $response) {
 		return ord(substr($response, 0, 1));
 	} else {
@@ -1109,16 +1066,7 @@ sub tc_set_backlash($$$$) {
 		return -1;
 	}
 
-	$port->write("P");
-	$port->write(chr(2));
-	$port->write(chr($axis));
-	$port->write(chr($direction));
-	$port->write(chr($backlash));
-	$port->write(chr(0));
-	$port->write(chr(0));
-	$port->write(chr(0));
-
-	my $response = read_telescope($port, 1);
+	my $response = tc_pass_through_cmd($port, 2, $axis, $direction, $backlash, 0, 0, 0);
 	if (defined $response) {
 		return 1;
 	} else {
