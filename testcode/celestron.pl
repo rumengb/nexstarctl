@@ -25,6 +25,9 @@ print "VERSION = ".tc_get_version($port)."\n";
 
 print "Align = ".tc_check_align($port)."\n";
 
+my $response = tc_pass_through_cmd($port, 1, 178, 4, 0, 0, 0, 2);
+print "GPS is present:". ord($response). "\n";
+
 #print "SET LOC= ".tc_set_location($port,  dms2d("22:58:09"), dms2d("44:05:31"))."\n";
 
 #my ($lon,$lat) = tc_get_location($port);
@@ -33,9 +36,9 @@ print "Align = ".tc_check_align($port)."\n";
 #my ($lon,$lat) = tc_get_location_str($port);
 #print "LONs=$lon LATs=$lat\n";
 
-my $tm=time()+1720000;
-print "$tm+3600\n";
-print "SETTIME= ".tc_set_time($port,$tm,2,1)."\n";
+my $tm=time();
+print "$tm\n";
+print "SETTIME= ".tc_set_time($port,$tm,2,0)."\n";
 
 my ($date,$time,$tz,$dst) = tc_get_time_str($port);
 
@@ -92,12 +95,14 @@ print "$date, $time, $tz, $dst\n";
 #my ($azp,$altp) = tc_get_azalt_p($port);
 #my ($az,$alt) = tc_get_azalt($port);
 
-#print "Set RA(+) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,0) . "\n";
-#print "Set RA(-) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0) . "\n";
-#print "Set DE(+) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0) . "\n";
-#print "Set DE(-) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE,0) . "\n";
-
-#print "Get RA(+) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE) . "\n";
+print "Set RA(+) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,0) . "\n";
+print "Set RA(-) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0) . "\n";
+print "Set DE(+) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0) . "\n";
+print "Set DE(-) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE,0) . "\n";
+print "Get RA(+) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE) . "\n";
+print "Get RA(-) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE) . "\n";
+print "Get DE(+) Backlash: " . tc_get_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE) . "\n";
+print "Get DE(-) Backlash: " . tc_get_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE) . "\n";
 
 print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
 print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";

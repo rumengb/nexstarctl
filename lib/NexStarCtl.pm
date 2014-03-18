@@ -249,27 +249,6 @@ sub close_telescope_port($) {
 
 =over 8
 
-=item tc_pass_through_cmd(port, msg_len, dest_id, cmd_id, data1, data2, data3, res_len)
-
-(TBD)
-
-=cut
-sub tc_pass_through_cmd($$$$$$$$) {
-	my ($port, $msg_len, $dest_id, $cmd_id, $data1, $data2, $data3, $res_len) = @_;
-
-	$port->write("P");
-	$port->write(chr($msg_len));
-	$port->write(chr($dest_id));
-	$port->write(chr($cmd_id));
-	$port->write(chr($data1));
-	$port->write(chr($data2));
-	$port->write(chr($data3));
-	$port->write(chr($res_len));
-
-	#we should read $res_len + 1 byes to accomodate '#' at the end
-	return read_telescope($port, $res_len + 1);
-}
-
 =item tc_check_align(port)
 
 If the telescope is aligned 1 is returned else 0 is returned. If no response received,
@@ -1069,6 +1048,29 @@ sub tc_set_backlash($$$$) {
 	} else {
 		return undef;
 	}
+}
+
+=item tc_pass_through_cmd(port, msg_len, dest_id, cmd_id, data1, data2, data3, res_len)
+
+Send a pass through command to a specific device. This function is meant for an internal
+library use and should not be used, unless you know exactly what you are doing.
+Calling this function with wrong parameters can be dangerous and can break the telescope!
+
+=cut
+sub tc_pass_through_cmd($$$$$$$$) {
+	my ($port, $msg_len, $dest_id, $cmd_id, $data1, $data2, $data3, $res_len) = @_;
+
+	$port->write("P");
+	$port->write(chr($msg_len));
+	$port->write(chr($dest_id));
+	$port->write(chr($cmd_id));
+	$port->write(chr($data1));
+	$port->write(chr($data2));
+	$port->write(chr($data3));
+	$port->write(chr($res_len));
+
+	# we should read $res_len + 1 byes to accomodate '#' at the end
+	return read_telescope($port, $res_len + 1);
 }
 
 =back
