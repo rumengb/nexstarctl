@@ -173,7 +173,7 @@ my %mounts = (
 =item open_telescope_port(port_name)
 
 Opens a communication port to the telescope by name (like "/dev/ttyUSB0") and
-returns it to be used in other finctions. In case of error undef is returned.
+returns it to be used in other functions. In case of error undef is returned.
 
 =cut
 sub open_telescope_port($) {
@@ -500,7 +500,7 @@ sub tc_goto_cancel($) {
 
 =item tc_echo(port, char)
 
-Checks the communication with the telecope. This function sends char to the telescope and 
+Checks the communication with the telescope. This function sends char to the telescope and 
 returns the echo received. If no response received, undef is returned.
 
 =cut
@@ -706,7 +706,7 @@ sub tc_get_time_str {
 
 =item tc_set_time(port, time, timezone, daylightsaving)
 
-This function sets the time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
+This function sets the time (in unix time format), timezone (in hours) and daylight saving time(0|1).
 On success 1 is returned.
 If no response received, undef is returned. If the mount is known to have RTC
 (currently only CGE and AdvancedVX) the date/time is set to RTC too.
@@ -1685,7 +1685,7 @@ For more information about the NexStar commands please refer to the original
 protocol specification described here:
 http://www.celestron.com/c3/images/files/downloads/1154108406_nexstarcommprot.pdf
 
-The undocumented commands are described here:
+Some of the undocumented commands are described here:
 http://www.paquettefamily.ca/nexstar/NexStar_AUX_Commands_10.pdf
 
 =head1 AUTHOR
