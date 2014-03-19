@@ -104,6 +104,11 @@ our @EXPORT = qw(
 	tc_get_autoguide_rate tc_set_autoguide_rate
 	tc_get_backlash tc_set_backlash
 
+	pec_seek_index pec_seek_index
+	pec_record pec_record_done
+	pec_playback pec_get_playback_index
+	pec_get_data_len pec_set_data pec_get_data
+
 	TC_TRACK_OFF
 	TC_TRACK_ALT_AZ
 	TC_TRACK_EQ_NORTH
@@ -113,7 +118,10 @@ our @EXPORT = qw(
 	TC_DIR_NEGATIVE
 
 	TC_AXIS_RA_AZM
-	TC_AXIS_DE_ALT	
+	TC_AXIS_DE_ALT
+
+	PEC_START
+	PEC_STOP
 );
 
 our $VERSION = "0.12";
@@ -123,18 +131,21 @@ use constant {
 	TC_TRACK_ALT_AZ => 1,
 	TC_TRACK_EQ_NORTH => 2,
 	TC_TRACK_EQ_SOUTH => 3,
-	
+
 	TC_DIR_POSITIVE => 1,
 	TC_DIR_NEGATIVE => 0,
-	
+
 	TC_AXIS_RA_AZM => 1,
 	TC_AXIS_DE_ALT => 0,
-	
+
 	_TC_DIR_POSITIVE => 6,
 	_TC_DIR_NEGATIVE => 7,
-	
+
 	_TC_AXIS_RA_AZM => 16,
 	_TC_AXIS_DE_ALT => 17,
+
+	PEC_START => 1,
+	PEC_STOP => 0,
 
 	DEG2RAD => 3.1415926535897932384626433832795/180.0,
 	RAD2DEG => 180.0/3.1415926535897932384626433832795
@@ -1004,7 +1015,7 @@ sub tc_get_backlash($$$) {
 		$direction = 0x41; # Get negative backlash
 	}
 
-	my $response =  tc_pass_through_cmd($port, 1, $axis, $direction, 0, 0, 0, 1);
+	my $response = tc_pass_through_cmd($port, 1, $axis, $direction, 0, 0, 0, 1);
 	if (defined $response) {
 		return ord(substr($response, 0, 1));
 	} else {
@@ -1061,16 +1072,262 @@ sub tc_pass_through_cmd($$$$$$$$) {
 	my ($port, $msg_len, $dest_id, $cmd_id, $data1, $data2, $data3, $res_len) = @_;
 
 	$port->write("P");
-	$port->write(chr($msg_len));
-	$port->write(chr($dest_id));
-	$port->write(chr($cmd_id));
-	$port->write(chr($data1));
-	$port->write(chr($data2));
-	$port->write(chr($data3));
-	$port->write(chr($res_len));
+	$port->write(pack("c", $msg_len));
+	$port->write(pack("c", $dest_id));
+	$port->write(pack("c", $cmd_id));
+	$port->write(pack("c", $data1));
+	$port->write(pack("c", $data2));
+	$port->write(pack("c", $data3));
+	$port->write(pack("c", $res_len));
 
 	# we should read $res_len + 1 byes to accomodate '#' at the end
 	return read_telescope($port, $res_len + 1);
+}
+
+=back
+
+=head1 PERIODIC ERROR CORRECTION FUNCTIONS
+
+The following commands are not officially documented by Celestron. Please note that these
+commands are reverse engineered and may not work exactly as expected.
+
+=over 8
+
+=item pec_index_found(port)
+
+(TBD)
+
+=cut
+
+sub pec_index_found($) {
+	my ($port) = @_;
+
+	my $response = tc_pass_through_cmd($port, 1, _TC_AXIS_RA_AZM, 0x18, 0, 0, 0, 1);
+	if (defined $response) {
+		if (ord(substr($response, 0, 1))) {
+			return 1;
+		} else {
+			return 0;
+		}
+	} else {
+		return undef;
+	}
+}
+
+=item pec_seek_index(port)
+
+(TBD)
+
+=cut
+
+sub pec_seek_index($) {
+	my ($port) = @_;
+
+	my $response = tc_pass_through_cmd($port, 1, _TC_AXIS_RA_AZM, 0x19, 0, 0, 0, 0);
+	if (defined $response) {
+		return 1;
+	} else {
+		return undef;
+	}
+}
+
+=item pec_record(port, action)
+
+(TBD)
+
+=cut
+
+sub pec_record($$) {
+	my ($port,$action) = @_;
+	my $cmd_id;
+
+	if ($action == PEC_START) {
+		$cmd_id = 0x0C;  # Start PEC record
+	} elsif ($action == PEC_STOP){
+		$cmd_id = 0x16;  # Stop PEC record
+	} else {
+		return -1;
+	}
+
+	my $response = tc_pass_through_cmd($port, 1, _TC_AXIS_RA_AZM, $cmd_id, 0, 0, 0, 0);
+	if (defined $response) {
+		return 1;
+	} else {
+		return undef;
+	}
+}
+
+=item pec_record_done(port)
+
+(TBD)
+
+=cut
+
+sub pec_record_done($) {
+	my ($port) = @_;
+
+	my $response = tc_pass_through_cmd($port, 1, _TC_AXIS_RA_AZM, 0x15, 0, 0, 0, 1);
+	if (defined $response) {
+		if (ord(substr($response, 0, 1))) {
+			return 1;
+		} else {
+			return 0;
+		}
+	} else {
+		return undef;
+	}
+}
+
+=item pec_playback(port, action)
+
+(TBD)
+
+=cut
+
+sub pec_playback($$) {
+	my ($port,$action) = @_;
+
+	if (($action != PEC_START) and ($action != PEC_STOP)) {
+		return -1;
+	}
+
+	my $response = tc_pass_through_cmd($port, 2, _TC_AXIS_RA_AZM, 0x0d, $action, 0, 0, 0);
+	if (defined $response) {
+		return 1;
+	} else {
+		return undef;
+	}
+}
+
+=item pec_get_playback_index(port)
+
+(TBD)
+
+=cut
+
+sub pec_get_playback_index($) {
+	my ($port) = @_;
+
+	my $response = tc_pass_through_cmd($port, 1, _TC_AXIS_RA_AZM, 0x0e, 0, 0, 0, 1);
+	if (defined $response) {
+		return ord(substr($response, 0, 1));
+	} else {
+		return undef;
+	}
+}
+
+=item pec_get_data_len(port)
+
+(TBD)
+
+=cut
+
+sub pec_get_data_len($) {
+	my ($port) = @_;
+
+	my $response = tc_pass_through_cmd($port, 2, _TC_AXIS_RA_AZM, 0x30, 0x3f, 0, 0, 1);
+	if (defined $response) {
+		return ord(substr($response, 0, 1));
+	} else {
+		return undef;
+	}
+}
+
+sub _pec_set_data($$$) {
+	my ($port, $index, $data) = @_;
+
+	my $response = tc_pass_through_cmd($port, 4, _TC_AXIS_RA_AZM, 0x31, 0x40+$index, $data, 0, 0);
+	if (defined $response) {
+		return 1;
+	} else {
+		return undef;
+	}
+}
+
+sub _pec_get_data($$) {
+	my ($port, $index) = @_;
+
+	my $response = tc_pass_through_cmd($port, 2, _TC_AXIS_RA_AZM, 0x30, 0x40+$index, 0, 0, 1);
+	if (defined $response) {
+		return unpack("c", substr($response, 0, 1));
+	} else {
+		return undef;
+	}
+}
+
+=item pec_set_data(port, data)
+
+(TBD)
+
+=cut
+
+sub pec_set_data($$) {
+	my ($port, $data) = @_;
+	my $res;
+
+	my $len = pec_get_data_len($port);
+	if (!defined $len) {
+		return undef;
+	}
+
+	if ($len != @{$data}) {
+		return -1;
+	}
+
+	my $index = 0;
+	my $current = 0;
+	foreach my $val (@{$data}) {
+		my $diff = $val - $current;
+		$current = $val;
+		my $rdiff = sprintf("%.0f",$diff / 0.0772);
+		if (($rdiff > 127) or ($rdiff < -127)) {
+			return -2;
+		}
+
+		# print "$index => $rdiff\t(diff = $diff, val = $val)\n";
+		$res = _pec_set_data($port, $index, $rdiff);
+		if (!defined ($res)) {
+			return undef;
+		}
+		$index++;
+	}
+
+	$res = pec_record($port, PEC_STOP);
+	if (!defined ($res)) {
+		return undef;
+	}
+	return 1;
+}
+
+=item pec_get_data(port)
+
+(TBD)
+
+=cut
+
+sub pec_get_data($) {
+	my ($port) = @_;
+	my @data;
+
+	my $len = pec_get_data_len($port);
+	# my $len = 11;
+	if (!defined $len) {
+		return undef;
+	}
+
+	my $current = 0;
+	for (my $index = 0; $index < $len; $index++) {
+		my $rdiff = _pec_get_data($port, $index);
+		# my $rdiff = $b[$index];
+		if (!defined ($rdiff)) {
+			return undef;
+		}
+
+		$current += $rdiff * 0.0772;
+		$data[$index] = $current;
+		# print "$index => $current\n";
+	}
+	return @data;
 }
 
 =back
@@ -1442,6 +1699,10 @@ Copyright (C) 2013-2014 by Rumen Bogdanovski
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.12.4 or,
 at your option, any later version of Perl 5 you may have available.
+
+The author assumes no liability or responsibility for damage or injury
+to persons or property arising from any use of this product. Use it at
+your own risk.
 
 =cut
 
