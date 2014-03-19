@@ -104,8 +104,8 @@ our @EXPORT = qw(
 	tc_get_autoguide_rate tc_set_autoguide_rate
 	tc_get_backlash tc_set_backlash
 
-	pec_seek_index pec_seek_index
-	pec_record pec_record_done
+	pec_seek_index pec_index_found
+	pec_record pec_record_complete
 	pec_playback pec_get_playback_index
 	pec_get_data_len pec_set_data pec_get_data
 
@@ -1095,7 +1095,11 @@ commands are reverse engineered and may not work exactly as expected.
 
 =item pec_index_found(port)
 
-(TBD)
+Determine if the position index is found and the mount will know from where to start
+PEC data playback.
+
+If the index is found 1 is returned. If it is not found 0 is returned. In case of communication
+problem the function returs undef.
 
 =cut
 
@@ -1116,7 +1120,12 @@ sub pec_index_found($) {
 
 =item pec_seek_index(port)
 
-(TBD)
+This command will move the mount until the position index is found, so that the PEC playback
+can be started from the correct location. The telescope will not be returned to the original
+position when the index is found. The completion of the operation can be checked with
+pec_index_found().
+
+On success 1 is returned. In case of an error undef is returned.
 
 =cut
 
@@ -1133,7 +1142,11 @@ sub pec_seek_index($) {
 
 =item pec_record(port, action)
 
-(TBD)
+Start and stop PEC data recording. The action parameter can be PEC_START or PEC_STOP
+to start or stop PEC data correction recording. The completion of the recording can
+be monitored with pec_record_complete().
+
+On success 1 is returned. In case of an error undef is returned.
 
 =cut
 
@@ -1157,13 +1170,16 @@ sub pec_record($$) {
 	}
 }
 
-=item pec_record_done(port)
+=item pec_record_complete(port)
 
-(TBD)
+Checks the completion of pec_record().
+
+If recording is complete 1 is returned. If recording is still in progress 0 is returned.
+In case of an error undef is returned.
 
 =cut
 
-sub pec_record_done($) {
+sub pec_record_complete($) {
 	my ($port) = @_;
 
 	my $response = tc_pass_through_cmd($port, 1, _TC_AXIS_RA_AZM, 0x15, 0, 0, 0, 1);
@@ -1180,7 +1196,10 @@ sub pec_record_done($) {
 
 =item pec_playback(port, action)
 
-(TBD)
+Start or stop pec playback. The action parameter can be PEC_START or PEC_STOP
+to start or stop PEC playback.
+
+On success 1 is returned. In case of an error undef is returned.
 
 =cut
 
@@ -1201,7 +1220,10 @@ sub pec_playback($$) {
 
 =item pec_get_playback_index(port)
 
-(TBD)
+Get the index of the PEC data for the curent mount position in the range form 0 to
+the value returned by pec_get_data_len() minus 1.
+
+On error undef is returned.
 
 =cut
 
@@ -1218,7 +1240,9 @@ sub pec_get_playback_index($) {
 
 =item pec_get_data_len(port)
 
-(TBD)
+Get the length of the internal register array in which the PEC data is stored.
+
+On error undef is returned.
 
 =cut
 
@@ -1257,7 +1281,13 @@ sub _pec_get_data($$) {
 
 =item pec_set_data(port, data)
 
-(TBD)
+Upload the periodic error correction data to the mount. The data parameter is a reference to an
+array with size that matches the value returned by pec_get_data_len(). The values should be in
+arc seconds.
+
+On success 1 is returned. If the size of the data parameter does not match the mount data size -1
+is returned. If any PEC value is too big and can not fit in the internal data format -2 is returned.
+On other errors undef is returned.
 
 =cut
 
@@ -1279,7 +1309,17 @@ sub pec_set_data($$) {
 	foreach my $val (@{$data}) {
 		my $diff = $val - $current;
 		$current = $val;
-		my $rdiff = sprintf("%.0f",$diff / 0.0772);
+
+		# I have no idea why the values are different for positive and negative numbers
+		# I thought the coefficient should be 0.0772 arcsec/unit as the resolution of
+		# 24bit number for 360 degrees. I tried to mach as best as I could the values
+		# returned by Celestron's PECTool and I came up with this numbers...
+		my $rdiff;
+		if ($diff < 0) {
+			$rdiff = sprintf("%.0f",$diff / 0.0845);
+		} else {
+			$rdiff = sprintf("%.0f",$diff / 0.0774);
+		}
 		if (($rdiff > 127) or ($rdiff < -127)) {
 			return -2;
 		}
@@ -1301,7 +1341,11 @@ sub pec_set_data($$) {
 
 =item pec_get_data(port)
 
-(TBD)
+Download the periodic error correction data from the mount. An array with the correction values is
+returned. The size of the array is equal to the value returned by pec_get_data_len(). The values
+are in arc seconds.
+
+On error undef is returned.
 
 =cut
 
@@ -1323,7 +1367,13 @@ sub pec_get_data($) {
 			return undef;
 		}
 
-		$current += $rdiff * 0.0772;
+		# I have no idea why the values are different for positive and negative numbers.
+		# Pease se the note in pec_set_data()!
+		if ($rdiff > 0) {
+			$current += $rdiff * 0.0774;
+		} else {
+			$current += $rdiff * 0.0845;
+		}
 		$data[$index] = $current;
 		# print "$index => $current\n";
 	}
