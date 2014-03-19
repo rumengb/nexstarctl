@@ -1098,8 +1098,8 @@ commands are reverse engineered and may not work exactly as expected.
 Determine if the position index is found and the mount will know from where to start
 PEC data playback.
 
-If the index is found 1 is returned. If it is not found 0 is returned. In case of communication
-problem the function returs undef.
+If the index is found 1 is returned. If it is not found 0 is returned. In case of an error
+the function returs undef.
 
 =cut
 
@@ -1120,9 +1120,9 @@ sub pec_index_found($) {
 
 =item pec_seek_index(port)
 
-This command will move the mount until the position index is found, so that the PEC playback
-can be started from the correct location. The telescope will not be returned to the original
-position when the index is found. The completion of the operation can be checked with
+This command will move the mount slightly until the position index is found, so that the PEC
+playback can be started from the correct position. The telescope will not return to the
+original position when the index is found. The completion of the operation can be checked with
 pec_index_found().
 
 On success 1 is returned. In case of an error undef is returned.
@@ -1142,9 +1142,11 @@ sub pec_seek_index($) {
 
 =item pec_record(port, action)
 
-Start and stop PEC data recording. The action parameter can be PEC_START or PEC_STOP
-to start or stop PEC data correction recording. The completion of the recording can
-be monitored with pec_record_complete().
+Start or stop the recording of periodic error correction data. The action parameter can
+be PEC_START or PEC_STOP to start or stop the recording. The completion of the recording
+can be monitored with pec_record_complete(). The data is collected by the mount from the
+user or auto-guider corrections made during the recording process. This recording can take
+10-15 minutes depending on the type of the mount.
 
 On success 1 is returned. In case of an error undef is returned.
 
@@ -1172,7 +1174,7 @@ sub pec_record($$) {
 
 =item pec_record_complete(port)
 
-Checks the completion of pec_record().
+Check the completion of pec_record().
 
 If recording is complete 1 is returned. If recording is still in progress 0 is returned.
 In case of an error undef is returned.
@@ -1196,8 +1198,8 @@ sub pec_record_complete($) {
 
 =item pec_playback(port, action)
 
-Start or stop pec playback. The action parameter can be PEC_START or PEC_STOP
-to start or stop PEC playback.
+Start or stop PEC playback. The action parameter can be PEC_START or PEC_STOP
+to start or stop PEC playback respectively.
 
 On success 1 is returned. In case of an error undef is returned.
 
@@ -1223,6 +1225,7 @@ sub pec_playback($$) {
 Get the index of the PEC data for the curent mount position in the range form 0 to
 the value returned by pec_get_data_len() minus 1.
 
+If the index position is not found yet, the function will always return 0.
 On error undef is returned.
 
 =cut
@@ -1282,10 +1285,10 @@ sub _pec_get_data($$) {
 =item pec_set_data(port, data)
 
 Upload the periodic error correction data to the mount. The data parameter is a reference to an
-array with size that matches the value returned by pec_get_data_len(). The values should be in
+array with size that matches the value returned by pec_get_data_len(). The values must be in
 arc seconds.
 
-On success 1 is returned. If the size of the data parameter does not match the mount data size -1
+On success 1 is returned. If the size of the data array does not match the mount data size -1
 is returned. If any PEC value is too big and can not fit in the internal data format -2 is returned.
 On other errors undef is returned.
 
