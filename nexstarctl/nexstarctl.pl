@@ -52,7 +52,7 @@ sub print_help() {
 	      "       The telescope port could be specified with this parameter or TELESCOPE_PORT\n".
 	      "       environment can be set. Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
-	      "          MacOSX: /dev/tty.usbserial\n".
+	      "          MacOSX: /dev/cu.usbserial\n".
 	      "          Solaris: /dev/ttya\n".
 	      "          Windows: COM1\n";
 }
@@ -662,7 +662,7 @@ sub main() {
 		if ($^O eq 'linux') {
 			$port = "/dev/ttyUSB0";
 		} elsif ($^O eq 'darwin') {
-			$port = "/dev/tty.usbserial";
+			$port = "/dev/cu.usbserial";
 		} elsif ($^O eq 'solaris') {
 			$port = "/dev/ttya";
 		} elsif ($^O eq 'MSWin32') {
