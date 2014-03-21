@@ -1148,7 +1148,8 @@ can be monitored with pec_record_complete(). The data is collected by the mount 
 user or auto-guider corrections made during the recording process. This recording can take
 10-15 minutes depending on the type of the mount.
 
-On success 1 is returned. In case of an error undef is returned.
+On success 1 is returned. If a wrong parameter is provided -1 is returned. In case of an
+error undef is returned.
 
 =cut
 
@@ -1201,7 +1202,8 @@ sub pec_record_complete($) {
 Start or stop PEC playback. The action parameter can be PEC_START or PEC_STOP
 to start or stop PEC playback respectively.
 
-On success 1 is returned. In case of an error undef is returned.
+On success 1 is returned. If a wrong parameter is provided -1 is returned. In case of an
+error undef is returned.
 
 =cut
 
@@ -1289,8 +1291,8 @@ array with size that matches the value returned by pec_get_data_len(). The value
 arc seconds.
 
 On success 1 is returned. If the size of the data array does not match the mount data size -1
-is returned. If any PEC value is too big and can not fit in the internal data format -2 is returned.
-On other errors undef is returned.
+is returned. If any of the PEC values is too big and can not fit in the internal data format -2 is returned.
+On other error undef is returned.
 
 =cut
 
