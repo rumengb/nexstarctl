@@ -1321,9 +1321,9 @@ sub pec_set_data($$) {
 		# returned by Celestron's PECTool and I came up with this numbers...
 		my $rdiff;
 		if ($diff < 0) {
-			$rdiff = sprintf("%.0f",$diff / 0.0845);
+			$rdiff = sprintf("%.0f", $val / 0.0845) - sprintf("%.0f", $current / 0.0845);
 		} else {
-			$rdiff = sprintf("%.0f",$diff / 0.0774);
+			$rdiff = sprintf("%.0f", $val / 0.0774) - sprintf("%.0f", $current / 0.0774);
 		}
 		if (($rdiff > 127) or ($rdiff < -127)) {
 			return -2;
