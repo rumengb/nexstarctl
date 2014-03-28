@@ -1313,7 +1313,6 @@ sub pec_set_data($$) {
 	my $current = 0;
 	foreach my $val (@{$data}) {
 		my $diff = $val - $current;
-		$current = $val;
 
 		# I have no idea why the values are different for positive and negative numbers
 		# I thought the coefficient should be 0.0772 arcsec/unit as the resolution of
@@ -1335,6 +1334,7 @@ sub pec_set_data($$) {
 			return undef;
 		}
 		$index++;
+		$current = $val;
 	}
 
 	$res = pec_record($port, PEC_STOP);
