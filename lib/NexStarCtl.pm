@@ -290,10 +290,10 @@ If no response received, undef is returned.
 =cut
 sub tc_goto_rade {
 	my ($port, $ra, $de, $precise) = @_;
-	if (($ra < 0) or ($ra > 360)) {
+	if (($ra < -0.1) or ($ra > 360.1)) {
 		return -1;
 	}
-	if (($de < -90) or ($de > 90)) {
+	if (($de < -90.1) or ($de > 90.1)) {
 		return -2;
 	}
 	my $nex;
@@ -327,10 +327,10 @@ If no response received, undef is returned.
 =cut
 sub tc_goto_azalt {
 	my ($port, $az, $alt, $precise) = @_;
-	if (($az < 0) or ($az > 360)) {
+	if (($az < -0.1) or ($az > 360.1)) {
 		return -1;
 	}
-	if (($alt < -90) or ($alt > 90)) {
+	if (($alt < -90.1) or ($alt > 90.1)) {
 		return -2;
 	}
 	my $nex;
