@@ -11,7 +11,7 @@ use NexStarCtl;
 #print get_model_name(2)."\n";
 #print get_model_name(19)."\n";
 
-my $port = open_telescope_port("/dev/cu.usbserial"); 
+my $port = open_telescope_port("/dev/ttyUSB0"); 
 #my $port = open_telescope_port("/dev/tty.NoZAP-PL2303-00004006");
 
 if (!defined $port) {
@@ -113,26 +113,31 @@ print "GPS is present:". ord($response). "\n";
 #print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,50) . "\n";
 #print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
 
-#my @data = pec_get_data($port);
+my @data = pec_get_data($port);
 
 #print "set data:".pec_set_data($port,\@data). "\n";
 
 #my @data2 = pec_get_data($port);
 
-#my $index = 0;
-#foreach my $val (@data) {
-#	print $val." - ".$data2[$index]."\n";
-#	$index++;
-#}
+my $index = 0;
+my $val2=0;
+foreach my $val (@data) {
+	print $val." - ".$data[$index]."\n";
+	$val2+=0.1;
+	$data[$index] = $val2;
+	$index++;
+}
 
-print "INDEX_FOUND=".pec_index_found($port)."\n";
-print "SEEK_INDEX=".pec_seek_index($port)."\n";
-sleep (5);
-print "INDEX_FOUND=".pec_index_found($port)."\n";
+print "set data:".pec_set_data($port,\@data). "\n";
 
-print "PALYBACK_INDEX=".pec_get_playback_index($port)."\n";
+#print "INDEX_FOUND=".pec_index_found($port)."\n";
+#print "SEEK_INDEX=".pec_seek_index($port)."\n";
+#sleep (5);
+#print "INDEX_FOUND=".pec_index_found($port)."\n";
 
-print "PEC_RECORD_DONE=".pec_record_complete($port)."\n";
+#print "PALYBACK_INDEX=".pec_get_playback_index($port)."\n";
+
+#print "PEC_RECORD_DONE=".pec_record_complete($port)."\n";
 
 #pec_record($port, PEC_START);
 
@@ -141,11 +146,11 @@ print "PEC_RECORD_DONE=".pec_record_complete($port)."\n";
 
 #print "PEC_RECORD_DONE=".pec_record_done($port)."\n";
 
-pec_record($port, PEC_STOP);
+#pec_record($port, PEC_STOP);
 
-print "PEC_RECORD_COMPLETE=".pec_record_complete($port)."\n";
+#print "PEC_RECORD_COMPLETE=".pec_record_complete($port)."\n";
 
-pec_playback($port, PEC_START);
+#pec_playback($port, PEC_START);
 
 
 
