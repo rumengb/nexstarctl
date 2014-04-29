@@ -1,5 +1,9 @@
 Revision history for Perl extension NexStarCtl.
 
+0.12  Wed Apr 30 02:17:06 2014
+	- implemented PEC data download, upload and collect
+	- misc fixes
+
 0.11  Wed Mar 12 11:28:25 2014
 	- ported nexstarctl.pl to windows OS.
 	- several bugfixes
