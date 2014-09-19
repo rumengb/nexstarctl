@@ -1,4 +1,4 @@
-NexStarCtl version 0.01
+NexStarCtl version 0.13
 =======================
 
 This module implements the serial commands supported by the Celestron 
@@ -8,6 +8,8 @@ Advanced-GT, and CGE mounts.
 
 Communication to the hand control is 9600 bits/sec, no parity and one 
 stop bit via the RS-232 port on the base of the hand control.
+Communication can be established over TCP/IP if nexbridge is running
+on the computer connected to the telescope.
 
 INSTALLATION
 

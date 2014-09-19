@@ -61,6 +61,7 @@ package NexStarCtl;
 
 use POSIX;
 use Time::Local;
+use IO::Socket::INET;
 use strict;
 use Exporter;
 
@@ -69,6 +70,8 @@ if ($^O eq "MSWin32") {
 } else {
 	eval "use Device::SerialPort"; die $@ if $@;
 }
+
+my $is_tcp=0;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw( 
@@ -116,7 +119,7 @@ our @EXPORT = qw(
 	TC_AXIS_DE_ALT	
 );
 
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 
 use constant {
 	TC_TRACK_OFF => 0,
@@ -162,17 +165,37 @@ my %mounts = (
 =item open_telescope_port(port_name)
 
 Opens a communication port to the telescope by name (like "/dev/ttyUSB0") and
-returns it to be used in other finctions. In case of error undef is returned.
+returns it to be used in other finctions. If the port_name has "tcp:\\" prefix
+the rest of the string is interptered as an IP address and port where to connnect to
+(like "tcp:\\localhost:9999"). In case of error undef is returned.
+
+NOTE: To be used with TCP you need to run nexbridge on the remote computer.
 
 =cut
 sub open_telescope_port($) {
-	my ($tty) = @_;
+	my ($portname) = @_;
 
 	my $port;
-	if ($^O eq "MSWin32") {
-		$port = new Win32::SerialPort($tty);
+
+	if ($portname =~ /^tcp:\\\\/) {
+		$portname =~ s/^tcp:\\\\//;
+		$is_tcp=1;
 	} else {
-		$port = new Device::SerialPort($tty);
+		$is_tcp=0;
+	}
+
+	if ($is_tcp) {
+		my $port = new IO::Socket::INET(
+			PeerHost => $portname,
+			Proto => 'tcp'
+		) or return undef;
+		return $port;
+	}
+
+	if ($^O eq "MSWin32") {
+		$port = new Win32::SerialPort($portname);
+	} else {
+		$port = new Device::SerialPort($portname);
 	}
 	if (! defined $port) {return undef;} 	
 	#$port->debug(1);
@@ -200,7 +223,11 @@ sub read_telescope($$) {
 	my $count;
 	my $total=0;
 	do {
-		($count,$char)=$port->read(1);
+		if ($is_tcp == 0) {
+			($count,$char)=$port->read(1);
+		} else {
+			$count=$port->read($char,1);
+		}
 		if ($count == 0) { return undef; }
 		$total += $count;
 		$response .= $char;
@@ -209,7 +236,11 @@ sub read_telescope($$) {
 	# if the last byte is not '#', this means that the device did
 	# not respond and the next byte should be '#' (hopefully)
 	if ($char ne "#") {
-		($count,$char)=$port->read(1);
+		if ($is_tcp == 0) {
+			($count,$char)=$port->read(1);
+		} else {
+			$count=$port->read($char,1);
+		}
 		return undef;
 	}
 	return $response;
