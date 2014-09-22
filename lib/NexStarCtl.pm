@@ -73,6 +73,8 @@ if ($^O eq "MSWin32") {
 
 my $is_tcp=0;
 
+use constant TIMEOUT => 4;
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw( 
 	VERSION
@@ -206,9 +208,33 @@ sub open_telescope_port($) {
 	$port->datatype('raw');    
 	$port->write_settings;
 	$port->read_char_time(0);     # don't wait for each character
-	$port->read_const_time(4000); # 4 second per unfulfilled "read" call
+	$port->read_const_time(TIMEOUT*1000);
 	return $port;
 }
+
+
+# For internal library use only!
+sub read_byte($) {
+	my ($port) = @_;
+
+	my ($byte, $count, $char);
+
+	if ($is_tcp == 0) {
+		($count,$char)=$port->read(1);
+	} else {
+		eval {
+			local $SIG{ALRM} = sub { die "TimeOut" };
+			alarm TIMEOUT;
+			$count=$port->read($char,1);
+			alarm 0;
+		};
+		if ($@ and $@ !~ /TimedOut/) {
+			return undef;
+		}
+	}
+	return ($count,$char);
+}
+
 
 =item read_telescope(port, len)
 
@@ -223,11 +249,7 @@ sub read_telescope($$) {
 	my $count;
 	my $total=0;
 	do {
-		if ($is_tcp == 0) {
-			($count,$char)=$port->read(1);
-		} else {
-			$count=$port->read($char,1);
-		}
+		($count,$char)=read_byte($port);
 		if ($count == 0) { return undef; }
 		$total += $count;
 		$response .= $char;
@@ -236,11 +258,7 @@ sub read_telescope($$) {
 	# if the last byte is not '#', this means that the device did
 	# not respond and the next byte should be '#' (hopefully)
 	if ($char ne "#") {
-		if ($is_tcp == 0) {
-			($count,$char)=$port->read(1);
-		} else {
-			$count=$port->read($char,1);
-		}
+		($count,$char)=read_byte($port);
 		return undef;
 	}
 	return $response;
