@@ -52,6 +52,8 @@ NexStar GPS-SA, NexStar iSeries, NexStar SE Series, NexStar GT, CPC, SLT, Advanc
 Communication to the hand control is 9600 bits/sec, no parity and one stop bit via the RS-232 port on the base of the
 hand control.
 
+Communication can be established over TCP/IP if nexbridge is running on the computer connected to the telescope.
+
 For extended example how to use this perl module look in to the distribution folder for  nexstarctl/nexstarctl.pl.
 This program is a complete console tool to control NexStar telesctopes based on NexStarCtl module.
 
