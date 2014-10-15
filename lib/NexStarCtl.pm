@@ -167,9 +167,9 @@ my %mounts = (
 =item open_telescope_port(port_name)
 
 Opens a communication port to the telescope by name (like "/dev/ttyUSB0") and
-returns it to be used in other finctions. If the port_name has "tcp:\\" prefix
+returns it to be used in other finctions. If the port_name has "tcp://" prefix
 the rest of the string is interptered as an IP address and port where to connnect to
-(like "tcp:\\localhost:9999"). In case of error undef is returned.
+(like "tcp://localhost:9999"). In case of error undef is returned.
 
 NOTE: To be used with TCP you need to run nexbridge on the remote computer.
 
@@ -179,8 +179,8 @@ sub open_telescope_port($) {
 
 	my $port;
 
-	if ($portname =~ /^tcp:\\\\/) {
-		$portname =~ s/^tcp:\\\\//;
+	if ($portname =~ /^tcp:\/\//) {
+		$portname =~ s/^tcp:\/\///;
 		$is_tcp=1;
 	} else {
 		$is_tcp=0;
