@@ -623,7 +623,7 @@ sub tc_get_location {
 	my $lonm=ord(substr($response, 5, 1));
 	my $lons=ord(substr($response, 6, 1));
 	my $lono=ord(substr($response, 7, 1));
-	
+
 	my $lon;
 	my $lat;
 	if((defined $str) and ($str =! 0)) {
@@ -667,13 +667,13 @@ sub tc_set_location {
 	
 	if ($lon < 0) {
 		$lon *= -1;
-		$issouth = 1;
+		$iswest = 1;
 	}
 	if ($lat < 0) {
 		$lat *= -1;
-		$iswest = 1;
+		$issouth = 1;
 	}
-	
+
 	if (($lat > 90) or ($lon > 180)) {
 		return -1;
 	}
