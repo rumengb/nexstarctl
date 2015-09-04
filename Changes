@@ -1,4 +1,7 @@
 Revision history for Perl extension NexStarCtl.
+0.14  Fri Sep  4 16:24:41 2015
+	- fix tc_set_location()
+
 0.13  Fri Sep 19 15:04:10 2014
 	- added TCP/IP telescope control
 
