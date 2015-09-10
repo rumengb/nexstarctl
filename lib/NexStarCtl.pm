@@ -92,6 +92,7 @@ our @EXPORT = qw(
 	open_telescope_port 
 	close_telescope_port
 	read_telescope 
+	enforce_proto_version
 
 	tc_pass_through_cmd
 	tc_check_align
