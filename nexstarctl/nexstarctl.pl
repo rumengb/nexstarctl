@@ -19,7 +19,7 @@ use if $^O eq "MSWin32", "Win32::Console::ANSI";
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 
-my $VERSION = "0.2";
+my $VERSION = "0.3";
 
 my $port;
 my $verbose;
@@ -79,6 +79,8 @@ sub init_telescope {
 		print RED "Can\'t open telescope on port $tport: $!\n";
 		return undef;
 	}
+
+	enforce_proto_version($dev);
 
 	$verbose && print GREEN "The telescope port $tport is open.\n";
 
@@ -169,16 +171,21 @@ sub status {
 		print RED "status: Error geting tracking mode. $!\n";
 		close_telescope_port($dev);
 		return undef;
-	}
-
-	if (($status == 0) && ($tracking == TC_TRACK_OFF)) {
-		print "Telescope is not tracking.\n";
-	} elsif (($status == 0) && ($tracking != TC_TRACK_OFF)) {
-		print "Telescope is tracking.\n";
+	} elsif ($tracking == -5) {  # get tracking mode is unsupported on this mount
+		if ($status == 0) {
+			print "Telescope is either tracking or not, but GOTO is not in progress.\n";
+		} else {
+			print "GOTO is in progress.\n";
+		}
 	} else {
-		print "GOTO is in progress.\n";
+		if (($status == 0) && ($tracking == TC_TRACK_OFF)) {
+			print "Telescope is not tracking.\n";
+		} elsif (($status == 0) && ($tracking != TC_TRACK_OFF)) {
+			print "Telescope is tracking.\n";
+		} else {
+			print "GOTO is in progress.\n";
+		}
 	}
-
 	close_telescope_port($dev);
 	return 1;
 }

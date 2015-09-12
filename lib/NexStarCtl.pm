@@ -306,7 +306,7 @@ NOTE: The non-documented (AUX) commands are available only when the enforcement 
 
 =cut
 
-sub enforce_proto_version() {
+sub enforce_proto_version {
 	my ($port, $ver) = @_;
 
 	if ((defined $ver) and ($ver != 0)) {
