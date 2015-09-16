@@ -11,8 +11,8 @@ use NexStarCtl;
 #print get_model_name(2)."\n";
 #print get_model_name(19)."\n";
 
-my $port = open_telescope_port("/dev/cu.usbserial"); 
-#my $port = open_telescope_port("/dev/tty.NoZAP-PL2303-00004006");
+#my $port = open_telescope_port("/dev/cu.usbserial"); 
+my $port = open_telescope_port("/dev/ttyUSB0");
 
 if (!defined $port) {
 	print "Can not open communication port.\n";
@@ -25,8 +25,8 @@ print "VERSION = ".tc_get_version($port)."\n";
 
 print "Align = ".tc_check_align($port)."\n";
 
-my $response = tc_pass_through_cmd($port, 1, 178, 4, 0, 0, 0, 2);
-print "GPS is present:". ord($response). "\n";
+#my $response = tc_pass_through_cmd($port, 1, 178, 4, 0, 0, 0, 2);
+#print "GPS is present:". ord($response). "\n";
 
 #print "SET LOC= ".tc_set_location($port,  dms2d("22:58:09"), dms2d("44:05:31"))."\n";
 
@@ -95,22 +95,22 @@ print "$date, $time, $tz, $dst\n";
 #my ($azp,$altp) = tc_get_azalt_p($port);
 #my ($az,$alt) = tc_get_azalt($port);
 
-print "Set RA(+) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,0) . "\n";
-print "Set RA(-) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0) . "\n";
-print "Set DE(+) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0) . "\n";
-print "Set DE(-) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE,0) . "\n";
-print "Get RA(+) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE) . "\n";
-print "Get RA(-) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE) . "\n";
-print "Get DE(+) Backlash: " . tc_get_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE) . "\n";
-print "Get DE(-) Backlash: " . tc_get_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE) . "\n";
+#print "Set RA(+) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,0) . "\n";
+#print "Set RA(-) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0) . "\n";
+#print "Set DE(+) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0) . "\n";
+#print "Set DE(-) Backlash: " . tc_set_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE,0) . "\n";
+#print "Get RA(+) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE) . "\n";
+#print "Get RA(-) Backlash: " . tc_get_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE) . "\n";
+#print "Get DE(+) Backlash: " . tc_get_backlash($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE) . "\n";
+#print "Get DE(-) Backlash: " . tc_get_backlash($port,TC_AXIS_DE_ALT,TC_DIR_NEGATIVE) . "\n";
 
 print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
 print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
 
-print "Set RA autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_RA_AZM,50) . "\n";
+print "Set RA autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_RA_AZM,66) . "\n";
 print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
 
-print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,50) . "\n";
+print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,66) . "\n";
 print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
 
 close_telescope_port($port);

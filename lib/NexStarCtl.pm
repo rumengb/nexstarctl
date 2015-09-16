@@ -58,6 +58,9 @@ Communication can be established over TCP/IP if nexbridge is running on the comp
 For extended example how to use this perl module look in to the distribution folder for  nexstarctl/nexstarctl.pl.
 This program is a complete console tool to control NexStar telesctopes based on NexStarCtl module.
 
+NOTE: For SkyWatcher/Orion mounts it is highly recommended to enforce protocol version checking (see enforce_proto_version()) as
+the AUX commands are not supported or may behave erratically.
+
 =cut
 
 package NexStarCtl;
