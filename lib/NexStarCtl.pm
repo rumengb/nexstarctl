@@ -46,8 +46,9 @@
 
 =head1 DESCRIPTION
 
-This module implements the serial commands supported by the Celestron NexStar hand control. This applies to the NexStar GPS,
-NexStar GPS-SA, NexStar iSeries, NexStar SE Series, NexStar GT, CPC, SLT, Advanced-VX, Advanced-GT, and CGE mounts.
+This module implements the serial commands supported by the Celestron NexStar hand control (HC) and SkyWatcher/Orion SynScan HC.
+This applies to the Celestron: NexStar GPS, NexStar GPS-SA, NexStar iSeries, NexStar SE Series, NexStar GT, CPC, SLT, Advanced-VX,
+Advanced-GT, CGE, CGEM etc. SkyWatcher: EQ5, HEQ5, EQ6 (Pro), AZ-EQ5 GT, AZ-EQ6 GT, EQ8 etc. and the corresponding Orion mounts.
 
 Communication to the hand control is 9600 bits/sec, no parity and one stop bit via the RS-232 port on the base of the
 hand control.
@@ -89,12 +90,18 @@ use constant {
 my $is_tcp = 0;
 my $proto_version = VER_AUX;
 
+# There is no way to tell SkyWatcher from Celestron. Unfortunately both share the
+# same IDs and some Celestron mounts have RTC wile SW does not. That is why the user
+# should decide. Set use_rtc to 1 to enable using the RTC on the mounts that have RTC.
+our $use_rtc = 0;
+
 use constant TIMEOUT => 4;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw( 
 	VERSION
 
+	use_rtc
 	VER_1_2 VER_1_6 VER_2_2 VER_2_3
 	VER_3_1 VER_4_10 VER_AUX VER_AUTO
 
@@ -823,7 +830,10 @@ sub tc_get_time_str {
 This function sets the time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
 On success 1 is returned.
 If no response received, undef is returned. If the mount is known to have RTC
-(currently only CGE and AdvancedVX) the date/time is set to RTC too.
+(currently only CGE and AdvancedVX) and NexStarCtl::use_rtc is defined and != 0, the date/time is
+set to the RTC too.
+
+NOTE: Do not set NexStarCtl::use_rtc if the mount is SkyWatcher otherwise tc_set_time() may fail.
 
 =cut
 sub tc_set_time {
@@ -858,6 +868,11 @@ sub tc_set_time {
 	my $response = read_telescope($port, 1);
 	if (! defined $response) {
 		return undef;
+	}
+
+	# return success if the RTC is not used
+	if (($use_rtc == 0) or ($use_rtc == undef)) {
+		return 1;
 	}
 
 	my $model = tc_get_model($port);

@@ -54,7 +54,8 @@ sub print_help() {
 	      "          Linux: /dev/ttyUSB0\n".
 	      "          MacOSX: /dev/cu.usbserial\n".
 	      "          Solaris: /dev/ttya\n".
-	      "          Windows: COM1\n";
+	      "          Windows: COM1\n".
+	      "NOTE: RA and DE should be secified in J2000 and are returned in J2000.\n";
 }
 
 
