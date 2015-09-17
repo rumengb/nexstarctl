@@ -833,7 +833,7 @@ sub tc_get_time_str {
 This function sets the time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
 On success 1 is returned.
 If no response received, undef is returned. If the mount is known to have RTC
-(currently only CGE and AdvancedVX) and NexStarCtl::use_rtc is defined and != 0, the date/time is
+(currently only CGE and AdvancedVX) and NexStarCtl::use_rtc is defined and != 0 (default is 0), the date/time is
 set to the RTC too.
 
 NOTE: Do not set NexStarCtl::use_rtc if the mount is SkyWatcher otherwise tc_set_time() may fail.
