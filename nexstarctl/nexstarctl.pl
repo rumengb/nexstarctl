@@ -45,17 +45,20 @@ sub print_help() {
 	      "       $N getazalt [teelescope]\n".
 	      "       $N abort [telescope]\n".
 	      "       $N status [telescope]\n".
+	      "       $N netscan\n".
 	      "options:\n".
 	      "       -v verbose output\n".
 	      "       -h print this help\n".
 	      "[telescope]:\n".
 	      "       The telescope port could be specified with this parameter or TELESCOPE_PORT\n".
-	      "       environment can be set. Defaults depend on the operating system:\n".
+	      "       environment variable can be set. Defaults depend on the operating system:\n".
 	      "          Linux: /dev/ttyUSB0\n".
 	      "          MacOSX: /dev/cu.usbserial\n".
 	      "          Solaris: /dev/ttya\n".
 	      "          Windows: COM1\n".
-	      "NOTE: RA and DE should be secified in J2000 and are returned in J2000.\n";
+	      "       The network connected telescopes can be listed with \"$N netscan\"\n".
+	      "       and the value of TELESCOPE_PORT for each telescope is given.\n\n".
+	      "NOTE: RA and DE should be secified in J2000 and are returned in J2000.\n\n";
 }
 
 
@@ -659,6 +662,37 @@ sub abort {
 }
 
 
+sub netscan {
+	eval "use Net::Bonjour";
+	if ($@) {
+		print RED "This feature is disabled to enable it Net::Bonjour should be installed!\n";
+		return undef;
+	}
+	my $res = Net::Bonjour->new('nexbridge');
+
+	$res->discover();
+
+	if ( $res->entries == 0) {
+		print "\nNo telescopes discovered!\n";
+		print YELLOW "To discover the network connected telescopes they should be\n";
+		print YELLOW "exported via Bonjour with nexbridge (See perldoc NexStarCtl)\n\n";
+		return 1;
+	}
+
+	print "\n";
+	printf "%-30s %s\n", "NAME", "TELESCOPE_PORT";
+	printf "%-30s %s\n", "===============", "==============";
+
+	$res->discover();
+	foreach my $entry ($res->entries) {
+		printf "%-30s %s://%s:%s\n", $entry->name, $res->protocol, $entry->address, $entry->port;
+	}
+	print "\n";
+
+        return 1;
+}
+
+
 sub main() {
 	my %options = ();
 
@@ -793,6 +827,14 @@ sub main() {
 			exit 1;
 		}
 		$verbose && print GREEN "Status succeeded.\n";
+		exit 0;
+
+	} elsif ($command eq "netscan") {
+		if (! netscan()) {
+			$verbose && print RED "Netscan returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "Netscan succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "-h") {
