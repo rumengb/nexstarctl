@@ -84,7 +84,12 @@ sub init_telescope {
 		return undef;
 	}
 
-	enforce_proto_version($dev);
+	my $res = enforce_proto_version($dev);
+	if ($res == undef) {
+		print RED "Can\'t communicate with telescope on port $tport: $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
 
 	$verbose && print GREEN "The telescope port $tport is open.\n";
 
@@ -210,7 +215,7 @@ sub gettime {
 	return undef if (! defined $dev);
 
 	my ($date, $time, $tz, $isdst) = tc_get_time_str($dev);
-	if (! defined $date) {
+	if (! defined $time) {
 		print RED "gettime: Failed. $!\n";
 		close_telescope_port($dev);
 		return undef;
@@ -245,7 +250,7 @@ sub settime {
 			$port = $params[0];
 		}
 		$time=time();
-	    $isdst = (localtime($time))[-1];
+		$isdst = (localtime($time))[-1];
 		$tz = int((timegm(localtime($time)) - $time) / 3600);
 		$tz = $tz-1 if ($isdst);
 
@@ -304,7 +309,7 @@ sub getlocation {
 	return undef if (! defined $dev);
 
 	my ($lon,$lat) = tc_get_location_str($dev);
-	if (! defined $lon) {
+	if (! defined $lat) {
 		print RED "getlocation: Failed. $!\n";
 		close_telescope_port($dev);
 		return undef;
@@ -530,7 +535,7 @@ sub getrade {
 	return undef if (! defined $dev);
 
 	my ($ra,$de) = tc_get_rade_p($dev);
-	if (!defined $ra) {
+	if (!defined $de) {
 		print RED "getrade: Error geting ra/de. $!\n";
 		close_telescope_port($dev);
 		return undef;
@@ -621,7 +626,7 @@ sub getazalt {
 	return undef if (! defined $dev);
 
 	my ($az,$alt) = tc_get_azalt_p($dev);
-	if (!defined $az) {
+	if (!defined $alt) {
 		print RED "getazalt: Error geting az/alt. $!\n";
 		close_telescope_port($dev);
 		return undef;
