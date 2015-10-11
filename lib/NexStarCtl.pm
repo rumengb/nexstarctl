@@ -98,6 +98,10 @@ my $proto_version = VER_AUX;
 # should decide. Set use_rtc to 1 to enable using the RTC on the mounts that have RTC.
 our $use_rtc = 0;
 
+#  0 => no error
+# -5 => unsupported command
+our $error = 0;
+
 use constant TIMEOUT => 4;
 
 our @ISA = qw(Exporter);
@@ -105,6 +109,7 @@ our @EXPORT = qw(
 	VERSION
 
 	use_rtc
+	error
 	VER_1_2 VER_1_6 VER_2_2 VER_2_3
 	VER_3_1 VER_4_10 VER_AUX VER_AUTO
 
@@ -189,6 +194,17 @@ my %mounts = (
 	14 => "CGEM",
 	20 => "Advanced VX"
 );
+
+sub version_before($) {
+	my ($version) = @_;
+
+	if ($proto_version < $version) {
+		$error = -5;
+	} else {
+		$error = 0;
+	}
+	return $error;
+}
 
 =head1 TELESCOPE COMMUNICATION
 
@@ -320,8 +336,9 @@ sub close_telescope_port($) {
 
 =item enforce_proto_version(port, ver)
 
-Enforce protocol minimal version checking. If a specific command is not supported by the firmware version given in ver,
-the corresponding tc_*() call will fail as unsupported and return -5. If version is VER_AUX, version enforcement
+Enforce protocol minimal version checking. If a specific command is not supported by the firmware version given
+in ver, the corresponding tc_*() call will fail as unsupported and return undef (in this case $NexStarCtl::error
+will be set to -5). If version is VER_AUX, version enforcement
 is disabled and all commands are enabled but some may fail, because they may not be supported by the current hand controller
 firmware. To avoid this use VER_AUTO (or ommit it) to set the version to the value reported by the currently connected hand
 controller. By default protocol version enforcement is disabled and the unsupported commands will either timeout
@@ -364,7 +381,7 @@ undef is returned.
 sub tc_check_align($) {
 	my ($port) = @_;
 
-	return -5 if $proto_version < VER_1_2;
+	return undef if version_before(VER_1_2);
 
 	$port->write("J");
 	my $response = read_telescope($port,2);
@@ -395,11 +412,11 @@ sub tc_goto_rade {
 	}
 	my $nex;
 	if((defined $precise) and ($precise =! 0)) {
-		return -5 if $proto_version < VER_1_6;
+		return undef if version_before(VER_1_6);
 		$nex=dd2pnex($ra, $de);
 		$port->write("r".$nex);
 	} else {
-		return -5 if $proto_version < VER_1_2;
+		return undef if version_before(VER_1_2);
 		$nex=dd2nex($ra, $de);
 		$port->write("R".$nex);
 	}
@@ -434,11 +451,11 @@ sub tc_goto_azalt {
 	}
 	my $nex;
 	if((defined $precise) and ($precise =! 0)) {
-		return -5 if $proto_version < VER_2_2;
+		return undef if version_before(VER_2_2);
 		$nex=dd2pnex($az, $alt);
 		$port->write("b".$nex);
 	} else {
-		return -5 if $proto_version < VER_1_2;
+		return undef if version_before(VER_1_2);
 		$nex=dd2nex($az, $alt);
 		$port->write("B".$nex);
 	}
@@ -469,7 +486,7 @@ sub tc_get_rade {
 	my $de;
 	
 	if((defined $precise) and ($precise =! 0)) {
-		return -5 if $proto_version < VER_1_6;
+		return undef if version_before(VER_1_6);
 		$port->write("e");
 		my $response = read_telescope($port, 18);
 		if (! defined $response) {
@@ -477,7 +494,7 @@ sub tc_get_rade {
 		} 
 		($ra,$de) = pnex2dd($response);
 	} else {
-		return -5 if $proto_version < VER_1_2;
+		return undef if version_before(VER_1_2);
 		$port->write("E");
 		my $response = read_telescope($port, 10);
 		if (! defined $response) {
@@ -508,7 +525,7 @@ sub tc_get_azalt {
 	my $alt;
 	
 	if((defined $precise) and ($precise =! 0)) {
-		return -5 if $proto_version < VER_2_2;
+		return undef if version_before(VER_2_2);
 		$port->write("z");
 		my $response = read_telescope($port, 18);
 		if (! defined $response) {
@@ -516,7 +533,7 @@ sub tc_get_azalt {
 		} 
 		($az,$alt) = pnex2dd($response);
 	} else {
-		return -5 if $proto_version < VER_1_2;
+		return undef if version_before(VER_1_2);
 		$port->write("Z");
 		my $response = read_telescope($port, 10);
 		if (! defined $response) {
@@ -544,7 +561,7 @@ If no response received, undef is returned.
 sub tc_sync_rade {
 	my ($port, $ra, $de, $precise) = @_;
 
-	return -5 if $proto_version < VER_4_10;
+	return undef if version_before(VER_4_10);
 
 	if (($ra < 0) or ($ra > 360)) {
 		return -1;
@@ -580,7 +597,7 @@ Returns 1 if GOTO is in progress else 0 is returned. If no response received, un
 sub tc_goto_in_progress($) {
 	my ($port) = @_;
 
-	return -5 if $proto_version < VER_1_2;
+	return undef if version_before(VER_1_2);
 
 	$port->write("L");
 	my $response = read_telescope($port, 2);
@@ -599,7 +616,7 @@ Cancels the GOTO operation. On success 1 is returned. If no response received, u
 sub tc_goto_cancel($) {
 	my ($port) = @_;
 
-	return -5 if $proto_version < VER_1_2;
+	return undef if version_before(VER_1_2);
 		        
 	$port->write("M");
 	my $response = read_telescope($port, 1);
@@ -619,7 +636,7 @@ returns the echo received. If no response received, undef is returned.
 sub tc_echo($$) {
 	my ($port, $char) = @_;
 
-	return -5 if $proto_version < VER_1_2;
+	return undef if version_before(VER_1_2);
 
 	$port->write("K".substr($char, 0, 1));
 	my $response = read_telescope($port, 2);
@@ -639,7 +656,7 @@ If no response received, undef is returned.
 sub tc_get_model($) {
 	my ($port) = @_;
 
-	return -5 if $proto_version < VER_2_2;
+	return undef if version_before(VER_2_2);
 
 	$port->write("m");
 	my $response = read_telescope($port, 2);
@@ -659,7 +676,7 @@ If no response received, undef is returned.
 sub tc_get_version($) {
 	my ($port) = @_;
 
-	return -5 if $proto_version < VER_1_2;
+	return undef if version_before(VER_1_2);
 
 	$port->write("V");
 	my $response = read_telescope($port, 3);
@@ -687,7 +704,7 @@ If no response received, undef is returned.
 sub tc_get_location {
 	my ($port,$str) = @_;
 
-	return -5 if $proto_version < VER_2_3;
+	return undef if version_before(VER_2_3);
 
 	$port->write("w");
 	my $response = read_telescope($port, 9);
@@ -745,7 +762,7 @@ sub tc_set_location {
 	my $issouth = 0;
 	my $iswest = 0;
 
-	return -5 if $proto_version < VER_2_3;
+	return undef if version_before(VER_2_3);
 	
 	if ($lon < 0) {
 		$lon *= -1;
@@ -796,7 +813,7 @@ If no response received, undef is returned.
 sub tc_get_time {
 	my ($port,$str) = @_;
 
-	return -5 if $proto_version < VER_2_3;
+	return undef if version_before(VER_2_3);
 
 	$port->write("h");
 	my $response = read_telescope($port, 9);
@@ -842,7 +859,7 @@ NOTE: Do not set NexStarCtl::use_rtc if the mount is SkyWatcher otherwise tc_set
 sub tc_set_time {
 	my ($port, $time, $tz, $dst) = @_;
 
-	return -5 if $proto_version < VER_2_3;
+	return undef if version_before(VER_2_3);
 
 	my $timezone = $tz;
 	$tz += 256 if ($tz < 0);
@@ -918,7 +935,7 @@ If no response received, undef is returned.
 sub tc_get_tracking_mode($) {
 	my ($port) = @_;
 
-	return -5 if $proto_version < VER_2_3;
+	return undef if version_before(VER_2_3);
 
 	$port->write("t");
 	my $response = read_telescope($port, 2);
@@ -940,7 +957,7 @@ If no response received, undef is returned.
 sub tc_set_tracking_mode($$) {
 	my ($port,$mode) = @_;
 
-	return -5 if $proto_version < VER_1_6;
+	return undef if version_before(VER_1_6);
 
 	if (($mode < 0) or ($mode > 3)) {
 		return -1;
@@ -970,7 +987,7 @@ If no response received, undef is returned.
 sub tc_slew_fixed {
 	my ($port,$axis,$direction,$rate) = @_;
 
-	return -5 if $proto_version < VER_1_6;
+	return undef if version_before(VER_1_6);
 	
 	if ($axis>0) { 
 		$axis = _TC_AXIS_RA_AZM;
@@ -1011,7 +1028,7 @@ On success 1 is returned. If no response received, undef is returned.
 sub tc_slew_variable {
 	my ($port,$axis,$direction,$rate) = @_;
 
-	return -5 if $proto_version < VER_1_6;
+	return undef if version_before(VER_1_6);
 
 	if ($axis>0) { 
 		$axis = _TC_AXIS_RA_AZM;
@@ -1071,7 +1088,7 @@ If no response received, undef is returned.
 sub tc_get_autoguide_rate($$) {
 	my ($port,$axis) = @_;
 
-	return -5 if $proto_version < VER_AUX;
+	return undef if version_before(VER_AUX);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
@@ -1102,7 +1119,7 @@ If no response received, undef is returned.
 sub tc_set_autoguide_rate($$$) {
 	my ($port,$axis,$rate) = @_;
 
-	return -5 if $proto_version < VER_AUX;
+	return undef if version_before(VER_AUX);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
@@ -1149,7 +1166,7 @@ If no response received, undef is returned.
 sub tc_get_backlash($$$) {
 	my ($port,$axis,$direction) = @_;
 
-	return -5 if $proto_version < VER_AUX;
+	return undef if version_before(VER_AUX);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
@@ -1184,7 +1201,7 @@ If no response received, undef is returned.
 sub tc_set_backlash($$$$) {
 	my ($port,$axis,$direction,$backlash) = @_;
 
-	return -5 if $proto_version < VER_AUX;
+	return undef if version_before(VER_AUX);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;

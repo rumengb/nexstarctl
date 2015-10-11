@@ -86,7 +86,7 @@ sub init_telescope {
 
 	my $res = enforce_proto_version($dev);
 	if ($res == undef) {
-		print RED "Can\'t communicate with telescope on port $tport: $!\n";
+		print RED "Communication with the telescope on port $tport failed: $!\n";
 		close_telescope_port($dev);
 		return undef;
 	}
@@ -177,14 +177,16 @@ sub status {
 
 	my $tracking = tc_get_tracking_mode($dev);
 	if (!defined $tracking) {
-		print RED "status: Error geting tracking mode. $!\n";
-		close_telescope_port($dev);
-		return undef;
-	} elsif ($tracking == -5) {  # get tracking mode is unsupported on this mount
-		if ($status == 0) {
-			print "Telescope is either tracking or not, but GOTO is not in progress.\n";
-		} else {
-			print "GOTO is in progress.\n";
+		if ($NexStarCtl::error != -5) {
+			print RED "status: Error geting tracking mode. $!\n";
+			close_telescope_port($dev);
+			return undef;
+		} else {  # get tracking mode is unsupported on this mount
+			if ($status == 0) {
+				print "Telescope is either tracking or not, but GOTO is not in progress.\n";
+			} else {
+				print "GOTO is in progress.\n";
+			}
 		}
 	} else {
 		if (($status == 0) && ($tracking == TC_TRACK_OFF)) {
