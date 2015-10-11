@@ -217,7 +217,7 @@ sub gettime {
 	return undef if (! defined $dev);
 
 	my ($date, $time, $tz, $isdst) = tc_get_time_str($dev);
-	if (! defined $time) {
+	if (! defined $date) {
 		print RED "gettime: Failed. $!\n";
 		close_telescope_port($dev);
 		return undef;
@@ -311,7 +311,7 @@ sub getlocation {
 	return undef if (! defined $dev);
 
 	my ($lon,$lat) = tc_get_location_str($dev);
-	if (! defined $lat) {
+	if (! defined $lon) {
 		print RED "getlocation: Failed. $!\n";
 		close_telescope_port($dev);
 		return undef;
@@ -537,7 +537,7 @@ sub getrade {
 	return undef if (! defined $dev);
 
 	my ($ra,$de) = tc_get_rade_p($dev);
-	if (!defined $de) {
+	if (!defined $ra) {
 		print RED "getrade: Error geting ra/de. $!\n";
 		close_telescope_port($dev);
 		return undef;
@@ -628,7 +628,7 @@ sub getazalt {
 	return undef if (! defined $dev);
 
 	my ($az,$alt) = tc_get_azalt_p($dev);
-	if (!defined $alt) {
+	if (!defined $az) {
 		print RED "getazalt: Error geting az/alt. $!\n";
 		close_telescope_port($dev);
 		return undef;
