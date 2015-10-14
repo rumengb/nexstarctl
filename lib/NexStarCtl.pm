@@ -274,7 +274,7 @@ sub read_byte($) {
 			$count=$port->read($char,1);
 			alarm 0;
 		};
-		if ($@ and $@ !~ /TimedOut/) {
+		if ($@ and $@ !~ /TimeOut/) {
 			return undef;
 		}
 	}
