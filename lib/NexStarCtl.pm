@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 
 ########################################################
-# NexCtl - NexStar control library
+# NexStarCtl - NexStar control library
 # 
 # 
-#		     (c)2013-2014 by Rumen G.Bogdanovski
+#		     (c)2013-2015 by Rumen G.Bogdanovski
 ########################################################
 
 =head1 NAME
