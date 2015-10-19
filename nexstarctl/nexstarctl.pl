@@ -692,7 +692,7 @@ sub netscan {
 
 	$res->discover();
 	foreach my $entry ($res->entries) {
-		printf "%-30s %s://%s:%s\n", $entry->name, $res->protocol, $entry->address, $entry->port;
+		printf "%-30s %s://%s:%s (%s)\n", $entry->name, $res->protocol, $entry->hostname, $entry->port, $entry->address;
 	}
 	print "\n";
 
