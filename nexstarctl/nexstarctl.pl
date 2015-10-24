@@ -41,6 +41,7 @@ sub print_help() {
 	      "       $N gettrack [telescope]\n".
 	      "       $N goto RA DE [telescope]\n".
 	      "       $N gotoaz AZ ALT [telescope]\n".
+	      "       $N sync RA DE [telescope]\n".
 	      "       $N getrade [telescope]\n".
 	      "       $N getazalt [teelescope]\n".
 	      "       $N abort [telescope]\n".
@@ -521,6 +522,65 @@ sub gotoeq {
 	return 1;
 }
 
+sub sync {
+	my @params = @_;
+	my $ra;
+	my $de;
+
+	if ($#params == 1) {
+		$ra = $params[0];
+		$de = $params[1];
+
+	} elsif ($#params == 2) {
+		$ra = $params[0];
+		$de = $params[1];
+		$port = $params[2];
+
+	} else {
+		print RED "sync: Wrong parameters.\n";
+		return undef;
+	}
+
+	# convert strings $ra/$de to $rad/$ded in decimal degrees
+	my $rad = hms2d($ra);
+	if ((!defined $rad) or ($rad > 360) or ($rad < 0)) {
+		print RED "sync: Wrong rightascension.\n";
+		return undef;
+	}
+
+	my $ded = dms2d($de);
+	if ((!defined $ded) or ($ded > 90) or ($ded < -90)) {
+		print RED "sync: Wrong declination.\n";
+		return undef;
+	}
+
+	# if telescope is slewing do nothing
+	# so set second parameter to 1
+	my $dev = init_telescope($port, 1);
+	return undef if (! defined $dev);
+
+	my $align = tc_check_align($dev);
+	if (!defined $align) {
+		print RED "sync: Error reading from telescope.\n";
+		return undef;
+	} elsif ($align == 0) {
+		print RED "The telescope is NOT aligned. Please align before sync.\n";
+		return undef;
+	}
+	$verbose && print GREEN "The telescope is aligned.\n";
+
+	$verbose && print "sync: ra = $rad, dec = $ded\n";
+
+	if (! tc_sync_rade_p($dev, $rad, $ded)) {
+		print RED "sync: Failed. $!\n";
+		close_telescope_port($dev);
+		return undef;
+	}
+
+	close_telescope_port($dev);
+	return 1;
+}
+
 
 sub getrade {
 	my @params = @_;
@@ -794,6 +854,14 @@ sub main() {
 			exit 1;
 		}
 		$verbose && print GREEN "GOTO ra/de succeeded.\n";
+		exit 0;
+
+	} elsif ($command eq "sync") {
+		if (! sync(@ARGV)) {
+			$verbose && print RED "SYNC ra/de returned error.\n";
+			exit 1;
+		}
+		$verbose && print GREEN "SYNC ra/de succeeded.\n";
 		exit 0;
 
 	} elsif ($command eq "gotoaz") {

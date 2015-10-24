@@ -553,7 +553,7 @@ sub tc_get_azalt_p {
 
 =item tc_sync_rade_p(port, ra, de)
 
-Syncs the telescope to RA/DEC coordinates ra, de (in decimal degrees). Function tc_goto_azalt_p uses precise sync.
+Syncs the telescope to RA/DEC coordinates ra, de (in decimal degrees). Function tc_sync_rade_p uses precise sync.
 If RA is not in [0;360] function returns -1. If DEC is not in [-90;90] -2 is returned.
 If no response received, undef is returned.
 
