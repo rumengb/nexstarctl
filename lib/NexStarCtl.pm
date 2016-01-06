@@ -132,7 +132,7 @@ our @EXPORT = qw(
 	enforce_proto_version
 
 	tc_pass_through_cmd
-	tc_check_align
+	tc_check_align tc_get_orientation
 	tc_goto_rade tc_goto_rade_p
 	tc_goto_azalt tc_goto_azalt_p
 	tc_get_rade tc_get_rade_p
@@ -393,6 +393,26 @@ sub tc_check_align($) {
 	my $response = read_telescope($port,2);
 	if (defined $response) {
 		return ord(substr($response, 0, 1));
+	} else {
+		return undef;
+	}
+}
+
+=item tc_get_orientation(port)
+
+Get the telescope oriantation. "E" or "W" is returned for East and West respectively. If no response received,
+undef is returned.
+
+=cut
+sub tc_get_orientation($) {
+	my ($port) = @_;
+
+	return undef if version_before(VER_1_2);
+
+	$port->write("p");
+	my $response = read_telescope($port,2);
+	if (defined $response) {
+		return substr($response, 0, 1);
 	} else {
 		return undef;
 	}
