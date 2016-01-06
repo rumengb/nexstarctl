@@ -88,6 +88,7 @@ use constant {
 	VER_AUX => 0xFFFFFF,
 	# Auto detect version by HC
 	VER_AUTO => 0x0,
+
 	# Protocol vendors
 	VNDR_ALL => 0xFFFF,
 	VNDR_CELESTRON => 1,
@@ -323,7 +324,7 @@ Writes data to the telescope and the result of write is returned.
 =cut
 sub write_telescope($$) {
 	my ($port, $data) = @_;
-	
+
 	return $port->write($data);
 }
 
@@ -335,7 +336,7 @@ Closes the communication port to the telescope.
 
 sub close_telescope_port($) {
 	my ($port) = @_;
-	
+
 	$port->close;
   	undef $port;   
 }
@@ -367,6 +368,16 @@ sub enforce_proto_version {
 	$proto_version = ($major << 16) + ($minor << 8) + $subminor;
 	return 1;
 }
+
+=item guess_proto_vendor(port)
+=cut
+
+sub guess_proto_vendor {
+	my ($port) = @_;
+
+	return VNDR_ALL;
+}
+
 
 #
 #  Telescope Commands
