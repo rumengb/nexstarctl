@@ -110,7 +110,7 @@ print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . 
 print "Set RA autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_RA_AZM,66) . "\n";
 print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
 
-print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,66) . "\n";
+print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,22) . "\n";
 print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
 
 close_telescope_port($port);

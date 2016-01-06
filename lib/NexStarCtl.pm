@@ -4,7 +4,7 @@
 # NexStarCtl - NexStar control library
 # 
 # 
-#		     (c)2013-2015 by Rumen G.Bogdanovski
+#		     (c)2013-2016 by Rumen G.Bogdanovski
 ########################################################
 
 =head1 NAME
@@ -78,20 +78,26 @@ if ($^O eq "MSWin32") {
 }
 
 use constant {
-	VER_1_2 => 0x102,
-	VER_1_6 => 0x106,
-	VER_2_2 => 0x202,
-	VER_2_3 => 0x203,
-	VER_3_1 => 0x301,
-	VER_4_10 => 0x40A,
+	VER_1_2 => 0x10200,
+	VER_1_6 => 0x10600,
+	VER_2_2 => 0x20200,
+	VER_2_3 => 0x20300,
+	VER_3_1 => 0x30100,
+	VER_4_10 => 0x40A00,
 	# All protocol versions
-	VER_AUX => 0xFFFF,
+	VER_AUX => 0xFFFFFF,
 	# Auto detect version by HC
-	VER_AUTO => 0x0
+	VER_AUTO => 0x0,
+	# Protocol vendors
+	VNDR_ALL => 0xFFFF,
+	VNDR_CELESTRON => 1,
+	VNDR_SKYWATCHER => 2
 };
+
 
 my $is_tcp = 0;
 my $proto_version = VER_AUX;
+my $proto_vendor = VNDR_ALL;
 
 # There is no way to tell SkyWatcher from Celestron. Unfortunately both share the
 # same IDs and some Celestron mounts have RTC wile SW does not. That is why the user
@@ -299,7 +305,7 @@ sub read_telescope($$) {
 		if ($count == 0) { return undef; }
 		$total += $count;
 		$response .= $char;
-	} while ($total < $len);
+	} while (($total < $len) or ($char ne "#"));
 	
 	# if the last byte is not '#', this means that the device did
 	# not respond and the next byte should be '#' (hopefully)
@@ -356,9 +362,9 @@ sub enforce_proto_version {
 		$proto_version = $ver;
 		return 1;
 	}
-	my ($major,$minor) = tc_get_version($port);
+	my ($major,$minor,$subminor) = tc_get_version($port);
 	if (!defined $major) { return undef; }
-	$proto_version = ($major << 8) + $minor;
+	$proto_version = ($major << 16) + ($minor << 8) + $subminor;
 	return 1;
 }
 
@@ -679,10 +685,20 @@ sub tc_get_version($) {
 	return undef if version_before(VER_1_2);
 
 	$port->write("V");
-	my $response = read_telescope($port, 3);
+	my $response = read_telescope($port, 4);
 	if (defined $response) {
-		return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)))
-		                 : ord(substr($response, 0, 1)).".".ord(substr($response, 1, 1));
+		if (length($response) == 3) {
+			$proto_vendor = VNDR_CELESTRON;
+			return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)))
+				         : ord(substr($response, 0, 1)).".".ord(substr($response, 1, 1));
+		} elsif (length($response) == 4) {
+			$proto_vendor = VNDR_SKYWATCHER;
+			return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)),ord(substr($response, 2, 1)))
+				         : ord(substr($response, 0, 1)).".".ord(substr($response, 1, 1)).".".ord(substr($response, 2, 1));
+		} else {
+			$proto_vendor = VNDR_ALL;
+			return undef;
+		}
 	} else {
 		return undef;
 	}
