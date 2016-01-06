@@ -305,8 +305,8 @@ sub read_telescope($$) {
 		if ($count == 0) { return undef; }
 		$total += $count;
 		$response .= $char;
-	} while (($total < $len) or ($char ne "#"));
-	
+	} while (($total < $len) and ($char ne "#"));
+
 	# if the last byte is not '#', this means that the device did
 	# not respond and the next byte should be '#' (hopefully)
 	if ($char ne "#") {
@@ -685,16 +685,16 @@ sub tc_get_version($) {
 	return undef if version_before(VER_1_2);
 
 	$port->write("V");
-	my $response = read_telescope($port, 4);
+	my $response = read_telescope($port, 7);
 	if (defined $response) {
 		if (length($response) == 3) {
 			$proto_vendor = VNDR_CELESTRON;
 			return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)))
 				         : ord(substr($response, 0, 1)).".".ord(substr($response, 1, 1));
-		} elsif (length($response) == 4) {
+		} elsif (length($response) == 7) {
 			$proto_vendor = VNDR_SKYWATCHER;
-			return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)),ord(substr($response, 2, 1)))
-				         : ord(substr($response, 0, 1)).".".ord(substr($response, 1, 1)).".".ord(substr($response, 2, 1));
+			return wantarray ? (hex(substr($response, 0, 2)),hex(substr($response, 2, 2)),hex(substr($response, 4, 2)))
+				         : hex(substr($response, 0, 2)).".".hex(substr($response, 2, 2)).".".hex(substr($response, 4, 2));
 		} else {
 			$proto_vendor = VNDR_ALL;
 			return undef;
