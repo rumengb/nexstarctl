@@ -56,7 +56,7 @@ hand control.
 Communication can be established over TCP/IP if nexbridge is running on the computer connected to the telescope.
 
 For extended example how to use this perl module look in to the distribution folder for  nexstarctl/nexstarctl.pl.
-This program is a complete console tool to control NexStar telesctopes based on NexStarCtl module.
+This program is a complete console tool to control NexStar telescopes based on NexStarCtl module.
 
 NOTE: For SkyWatcher/Orion mounts it is highly recommended to enforce protocol version checking (see enforce_proto_version()) as
 the AUX commands are not supported or may behave erratically.
@@ -121,6 +121,8 @@ our @EXPORT = qw(
 	VER_1_2 VER_1_6 VER_2_2 VER_2_3
 	VER_3_1 VER_4_10 VER_4_37_8 VER_AUX VER_AUTO
 
+	VNDR_CELESTRON VNDR_SKYWATCHER
+
 	DEG2RAD RAD2DEG 
 	notnum precess round 
 	d2hms d2dms d2dm dms2d hms2d
@@ -132,6 +134,8 @@ our @EXPORT = qw(
 	close_telescope_port
 	read_telescope 
 	enforce_proto_version
+	guess_mount_vendor
+	enforce_mount_vendor
 
 	tc_pass_through_cmd
 	tc_check_align tc_get_orientation
@@ -238,8 +242,8 @@ sub version_before {
 =item open_telescope_port(port_name)
 
 Opens a communication port to the telescope by name (like "/dev/ttyUSB0") and
-returns it to be used in other finctions. If the port_name has "tcp://" prefix
-the rest of the string is interptered as an IP address and port where to connnect to
+returns it to be used in other functions. If the port_name has "tcp://" prefix
+the rest of the string is interpreted as an IP address and port where to connect to
 (like "tcp://localhost:9999"). In case of error undef is returned.
 
 NOTE: To be used with TCP you need to run nexbridge on the remote computer.
@@ -372,7 +376,7 @@ Enforce protocol minimal version checking. If a specific command is not supporte
 in ver, the corresponding tc_*() call will fail as unsupported and return undef (in this case $NexStarCtl::error
 will be set to -5). If version is VER_AUX, version enforcement
 is disabled and all commands are enabled but some may fail, because they may not be supported by the current hand controller
-firmware. To avoid this use VER_AUTO (or ommit it) to set the version to the value reported by the currently connected hand
+firmware. To avoid this use VER_AUTO (or omit it) to set the version to the value reported by the currently connected hand
 controller. By default protocol version enforcement is disabled and the unsupported commands will either timeout
 or return erratic results. Because of this, calling enforce_proto_version() with VER_AUTO or no ver parameter right after
 open_telescope_port() is highly recommended. The predefined versions are: VER_1_2, VER_1_6, VER_2_2, VER_2_3, VER_3_1 and VER_4_10.
@@ -396,7 +400,9 @@ sub enforce_proto_version {
 
 =item guess_mount_vendor(port)
 
-This function guesses the manufacturor of the mount by a difference in the protocol. Mount version command returns 2 bytes for Celestron and SkyWatcher returns 6 bytes (since version 4.37.8). It returns the guessed value on success (VNDR_CELESTRON or VNDR_SKYWATCHER). On error undef is returned.
+This function guesses the manufacturer of the mount by a slight difference in the protocol. The firmware version command returns 2 bytes for Celestron mounts and 6 bytes for SkyWatcher mounts (since version 4.37.8). On success the guessed value is returned (VNDR_CELESTRON or VNDR_SKYWATCHER). On error undef is returned.
+
+NOTE: Skywather mounts with firmware before 4.37.8 will be threated as Celestron in this case enforce_mount_vendor() can be used.
 =cut
 
 sub guess_mount_vendor {
@@ -417,6 +423,20 @@ sub guess_mount_vendor {
 	}
 }
 
+=item enforse_mount_vendor(vendor)
+
+This function enforces protocol of the specified vendor to be used overriding the guessed one. Valid Vendor IDs are VNDR_CELESTRON and VNDR_SKYWATCHER. On success the vendor ID is returned otherwise it returns undef.
+
+=cut
+
+sub enforce_mount_vendor($) {
+	my ($vendor) = @_;
+
+	if (($vendor != VNDR_CELESTRON) and ($vendor != VNDR_SKYWATCHER)) {
+		return undef;
+	}
+	$mount_vendor = $vendor;
+}
 
 #
 #  Telescope Commands
@@ -450,7 +470,7 @@ sub tc_check_align($) {
 
 =item tc_get_orientation(port)
 
-Get the telescope oriantation. "E" or "W" is returned for East and West respectively. If no response received,
+Get the telescope orientation. "E" or "W" is returned for East and West respectively. If no response received,
 undef is returned.
 
 =cut
@@ -705,7 +725,7 @@ sub tc_goto_cancel($) {
 
 =item tc_echo(port, char)
 
-Checks the communication with the telecope. This function sends char to the telescope and 
+Checks the communication with the telescope. This function sends char to the telescope and 
 returns the echo received. If no response received, undef is returned.
 
 =cut
@@ -881,7 +901,7 @@ sub tc_set_location {
 
 =item tc_get_time(port)
 
-This function returns the stored time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
+This function returns the stored time (in Unix time format), timezone (in hours) and daylight saving time(0|1).
 If no response received, undef is returned.
 
 =item tc_get_time_str(port)
@@ -928,7 +948,7 @@ sub tc_get_time_str {
 
 =item tc_set_time(port, time, timezone, daylightsaving)
 
-This function sets the time (in unixtime format), timezone (in hours) and daylight saving time(0|1).
+This function sets the time (in Unix time format), timezone (in hours) and daylight saving time(0|1).
 On success 1 is returned.
 If no response received, undef is returned. If the mount is known to have RTC
 (currently only CGE and AdvancedVX) and NexStarCtl::use_rtc is defined and != 0 (default is 0), the date/time is
@@ -1145,7 +1165,6 @@ If the mount is not known undef is returned.
 
 sub get_model_name($) {
 	my ($model_id) = @_;
-	print "$mount_vendor, $model_id\n";
 	return $mounts{$mount_vendor}{$model_id};
 }
 
@@ -1353,7 +1372,7 @@ sub notnum($)
 
 =item precess(ra0, dec0, equinox0, equinox1)
 
-Precesses coordinates ra0 and dec0 from equinox0 to equinox1 and returns the caclculated ra1 and dec1. 
+Precesses coordinates ra0 and dec0 from equinox0 to equinox1 and returns the calculated ra1 and dec1. 
 Where ra and dec should be in decimal degrees and equinox should be in years (and fraction of the year).
 
 =cut

@@ -19,7 +19,7 @@ use if $^O eq "MSWin32", "Win32::Console::ANSI";
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 
-my $VERSION = "0.3";
+my $VERSION = "0.4";
 
 my $port;
 my $verbose;
