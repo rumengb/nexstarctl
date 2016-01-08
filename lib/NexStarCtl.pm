@@ -320,8 +320,7 @@ sub read_byte($) {
 
 =item read_telescope(port, len)
 
-Reads data from the telescope. On error or in case less than len bytes are
-read undef is returned.
+Reads data from the telescope. On error undef is returned.
 
 =cut
 sub read_telescope($$) {
