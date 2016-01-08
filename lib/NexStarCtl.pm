@@ -189,7 +189,7 @@ use constant {
 };
 
 my %mounts = (
-	VNDR_CELESTRON => (
+	&VNDR_CELESTRON => {
 		1 => "NexStar GPS Series",
 		3 => "NexStar i-Series",
 		4 => "NexStar i-Series SE",
@@ -201,8 +201,8 @@ my %mounts = (
 		11 => "NexStar 4/5 SE",
 		12 => "NexStar 6/8 SE",
 		14 => "CGEM",
-		20 => "Advanced VX"),
-	VNDR_SKYWATCHER => (
+		20 => "Advanced VX"},
+	&VNDR_SKYWATCHER => {
 		0 => "EQ6 Series",
 		1 => "HEQ5 Series",
 		2 => "EQ5 Series",
@@ -211,20 +211,21 @@ my %mounts = (
 		5 => "AZ-EQ6 Series",
 		6 => "AZ-EQ5 Series",
 		160 => "AllView Series"
-	)
+	}
 );
 
 sub version_before {
 	my ($version, $vendor) = @_;
 
-	if ((defined $vendor) and ($mount_vendor & $vendor)) {
-		if ($proto_version < $version) {
-			$error = -5;
-		} else {
-			$error = 0;
-		}
-	} else {
+	if ((defined $vendor) and (($mount_vendor & $vendor) == 0)) {
 		$error = -5;
+		return $error;
+	}
+
+	if ($proto_version < $version) {
+		$error = -5;
+	} else {
+		$error = 0;
 	}
 
 	return $error;
@@ -1144,6 +1145,7 @@ If the mount is not known undef is returned.
 
 sub get_model_name($) {
 	my ($model_id) = @_;
+	print "$mount_vendor, $model_id\n";
 	return $mounts{$mount_vendor}{$model_id};
 }
 

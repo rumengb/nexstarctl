@@ -176,7 +176,6 @@ sub status {
 		return undef;
 	}
 
-	my $orientation = tc_get_orientation($dev);
 	my $tracking = tc_get_tracking_mode($dev);
 	if (!defined $tracking) {
 		if ($NexStarCtl::error != -5) {
@@ -192,9 +191,9 @@ sub status {
 		}
 	} else {
 		if (($status == 0) && ($tracking == TC_TRACK_OFF)) {
-			print "Telescope is not tracking. $orientation of column.\n";
+			print "Telescope is not tracking.\n";
 		} elsif (($status == 0) && ($tracking != TC_TRACK_OFF)) {
-			print "Telescope is tracking. $orientation of column.\n";
+			print "Telescope is tracking.\n";
 		} else {
 			print "GOTO is in progress.\n";
 		}
