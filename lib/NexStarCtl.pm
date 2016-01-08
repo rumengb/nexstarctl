@@ -1248,7 +1248,7 @@ If no response received, undef is returned.
 sub tc_get_backlash($$$) {
 	my ($port,$axis,$direction) = @_;
 
-	return undef if version_before(VER_AUX);
+	return undef if version_before(VER_AUX, VNDR_CELESTRON);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
@@ -1283,7 +1283,7 @@ If no response received, undef is returned.
 sub tc_set_backlash($$$$) {
 	my ($port,$axis,$direction,$backlash) = @_;
 
-	return undef if version_before(VER_AUX);
+	return undef if version_before(VER_AUX, VNDR_CELESTRON);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
