@@ -84,6 +84,7 @@ use constant {
 	VER_2_3 => 0x20300,
 	VER_3_1 => 0x30100,
 	VER_4_10 => 0x40A00,
+	VER_4_37_8 => 0x042508,
 	# All protocol versions
 	VER_AUX => 0xFFFFFF,
 	# Auto detect version by HC
@@ -98,7 +99,7 @@ use constant {
 
 my $is_tcp = 0;
 my $proto_version = VER_AUX;
-my $proto_vendor = VNDR_ALL;
+my $mount_vendor = VNDR_ALL;
 
 # There is no way to tell SkyWatcher from Celestron. Unfortunately both share the
 # same IDs and some Celestron mounts have RTC wile SW does not. That is why the user
@@ -118,7 +119,7 @@ our @EXPORT = qw(
 	use_rtc
 	error
 	VER_1_2 VER_1_6 VER_2_2 VER_2_3
-	VER_3_1 VER_4_10 VER_AUX VER_AUTO
+	VER_3_1 VER_4_10 VER_4_37_8 VER_AUX VER_AUTO
 
 	DEG2RAD RAD2DEG 
 	notnum precess round 
@@ -202,14 +203,19 @@ my %mounts = (
 	20 => "Advanced VX"
 );
 
-sub version_before($) {
-	my ($version) = @_;
+sub version_before {
+	my ($version, $vendor) = @_;
 
-	if ($proto_version < $version) {
-		$error = -5;
+	if ((defined $vendor) and ($mount_vendor & $vendor)) {
+		if ($proto_version < $version) {
+			$error = -5;
+		} else {
+			$error = 0;
+		}
 	} else {
-		$error = 0;
+		$error = -5;
 	}
+
 	return $error;
 }
 
@@ -262,6 +268,13 @@ sub open_telescope_port($) {
 	$port->write_settings;
 	$port->read_char_time(0);     # don't wait for each character
 	$port->read_const_time(TIMEOUT*1000);
+
+	$mount_vendor = guess_mount_vendor($port);
+	if (! defined $mount_vendor) {
+		$port->close();
+		return undef;
+	}
+
 	return $port;
 }
 
@@ -369,13 +382,27 @@ sub enforce_proto_version {
 	return 1;
 }
 
-=item guess_proto_vendor(port)
+=item guess_mount_vendor(port)
+
+This function guesses the manufacturor of the mount by a difference in the protocol. Mount version command returns 2 bytes for Celestron and SkyWatcher returns 6 bytes (since version 4.37.8). It returns the guessed value on success (VNDR_CELESTRON or VNDR_SKYWATCHER). On error undef is returned.
 =cut
 
-sub guess_proto_vendor {
+sub guess_mount_vendor {
 	my ($port) = @_;
+	return undef if version_before(VER_1_2);
 
-	return VNDR_ALL;
+	$port->write("V");
+	my $response = read_telescope($port, 7);
+
+	return undef unless (defined $response);
+
+	if (length($response) == 3) {
+		return VNDR_CELESTRON;
+	} elsif (length($response) == 7) {
+		return VNDR_SKYWATCHER;
+	} else {
+		return undef;
+	}
 }
 
 
@@ -418,7 +445,7 @@ undef is returned.
 sub tc_get_orientation($) {
 	my ($port) = @_;
 
-	return undef if version_before(VER_1_2);
+	return undef if version_before(VER_4_37_8, VNDR_SKYWATCHER);
 
 	$port->write("p");
 	my $response = read_telescope($port,2);
@@ -719,20 +746,15 @@ sub tc_get_version($) {
 	my $response = read_telescope($port, 7);
 	if (defined $response) {
 		if (length($response) == 3) {
-			$proto_vendor = VNDR_CELESTRON;
 			return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)))
 				         : ord(substr($response, 0, 1)).".".ord(substr($response, 1, 1));
 		} elsif (length($response) == 7) {
-			$proto_vendor = VNDR_SKYWATCHER;
 			return wantarray ? (hex(substr($response, 0, 2)),hex(substr($response, 2, 2)),hex(substr($response, 4, 2)))
 				         : hex(substr($response, 0, 2)).".".hex(substr($response, 2, 2)).".".hex(substr($response, 4, 2));
-		} else {
-			$proto_vendor = VNDR_ALL;
-			return undef;
 		}
-	} else {
-		return undef;
 	}
+
+	return undef;
 }
 
 
