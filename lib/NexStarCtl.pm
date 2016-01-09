@@ -319,12 +319,14 @@ sub read_byte($) {
 
 
 =item read_telescope(port, len)
+=item read_telescope(port, len , vl)
 
-Reads data from the telescope. On error undef is returned.
+Reads data from the telescope. On error or in case less than len bytes are read undef is returned.
+If "vl" is true the function will return success if "#" is read before the len bytes are read.
 
 =cut
-sub read_telescope($$) {
-	my ($port,$len) = @_;
+sub read_telescope {
+	my ($port,$len,$vl) = @_;
 	my $response;
 	my $char;
 	my $count;
@@ -334,7 +336,10 @@ sub read_telescope($$) {
 		if ($count == 0) { return undef; }
 		$total += $count;
 		$response .= $char;
-	} while (($total < $len) and ($char ne "#"));
+		if (($vl) and ($char eq "#")) {
+			return $response;
+		}
+	} while ($total < $len);
 
 	# if the last byte is not '#', this means that the device did
 	# not respond and the next byte should be '#' (hopefully)
@@ -409,7 +414,7 @@ sub guess_mount_vendor {
 	return undef if version_before(VER_1_2);
 
 	$port->write("V");
-	my $response = read_telescope($port, 7);
+	my $response = read_telescope($port, 7, 1);
 
 	return undef unless (defined $response);
 
@@ -774,7 +779,7 @@ sub tc_get_version($) {
 	return undef if version_before(VER_1_2);
 
 	$port->write("V");
-	my $response = read_telescope($port, 7);
+	my $response = read_telescope($port, 7, 1);
 	if (defined $response) {
 		if (length($response) == 3) {
 			return wantarray ? (ord(substr($response, 0, 1)),ord(substr($response, 1, 1)))
