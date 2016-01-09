@@ -427,7 +427,7 @@ sub guess_mount_vendor {
 	}
 }
 
-=item enforse_mount_vendor(vendor)
+=item enforce_mount_vendor(vendor)
 
 This function enforces protocol of the specified vendor to be used overriding the guessed one. Valid Vendor IDs are VNDR_CELESTRON and VNDR_SKYWATCHER. On success the vendor ID is returned otherwise it returns undef.
 
