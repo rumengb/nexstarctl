@@ -378,7 +378,7 @@ is disabled and all commands are enabled but some may fail, because they may not
 firmware. To avoid this use VER_AUTO (or omit it) to set the version to the value reported by the currently connected hand
 controller. By default protocol version enforcement is disabled and the unsupported commands will either timeout
 or return erratic results. Because of this, calling enforce_proto_version() with VER_AUTO or no ver parameter right after
-open_telescope_port() is highly recommended. The predefined versions are: VER_1_2, VER_1_6, VER_2_2, VER_2_3, VER_3_1 and VER_4_10.
+open_telescope_port() is highly recommended. The predefined versions are: VER_1_2, VER_1_6, VER_2_2, VER_2_3, VER_3_1, VER_4_10 and VER_4_37_8.
 
 NOTE: The non-documented (AUX) commands are available only when the enforcement is disabled.
 
