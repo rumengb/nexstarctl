@@ -406,7 +406,7 @@ sub enforce_proto_version {
 
 This function guesses the manufacturer of the mount by a slight difference in the protocol. The firmware version command returns 2 bytes for Celestron mounts and 6 bytes for SkyWatcher mounts (since version 4.37.8). On success the guessed value is returned (VNDR_CELESTRON or VNDR_SKYWATCHER). On error undef is returned.
 
-NOTE: Skywather mounts with firmware before 4.37.8 will be threated as Celestron in this case enforce_mount_vendor() can be used.
+NOTE: SkyWather mounts with firmware before 4.37.8 will be threated as Celestron in this case enforce_mount_vendor() can be used.
 =cut
 
 sub guess_mount_vendor {
@@ -429,7 +429,10 @@ sub guess_mount_vendor {
 
 =item enforce_mount_vendor(vendor)
 
-This function enforces protocol of the specified vendor to be used overriding the guessed one. Valid Vendor IDs are VNDR_CELESTRON and VNDR_SKYWATCHER. On success the vendor ID is returned otherwise it returns undef.
+This function enforces protocol of the specified vendor to be used overriding the guessed one.
+Valid vendor IDs are VNDR_CELESTRON and VNDR_SKYWATCHER. This way the commands not supported
+by the vendor version of the protocol will fail and $NexStarCtl::error will be set to -5.
+On success the vendor ID is returned otherwise it returns undef.
 
 =cut
 
