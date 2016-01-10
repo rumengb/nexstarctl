@@ -58,7 +58,7 @@ Communication can be established over TCP/IP if nexbridge is running on the comp
 For extended example how to use this perl module look in to the distribution folder for  nexstarctl/nexstarctl.pl.
 This program is a complete console tool to control NexStar telescopes based on NexStarCtl module.
 
-NOTE: For SkyWatcher/Orion mounts it is highly recommended to enforce protocol version checking (see enforce_proto_version()) as
+NOTE: For SkyWatcher/Orion mounts it is highly recommended to enforce protocol version checking (see enforce_protocol_version()) as
 the AUX commands are not supported or may behave erratically.
 
 =cut
@@ -133,9 +133,9 @@ our @EXPORT = qw(
 	open_telescope_port 
 	close_telescope_port
 	read_telescope 
-	enforce_proto_version
+	enforce_protocol_version
 	guess_mount_vendor
-	enforce_mount_vendor
+	enforce_vendor_protocol
 
 	tc_pass_through_cmd
 	tc_check_align tc_get_orientation
@@ -374,7 +374,7 @@ sub close_telescope_port($) {
   	undef $port;   
 }
 
-=item enforce_proto_version(port, ver)
+=item enforce_protocol_version(port, ver)
 
 Enforce protocol minimal version checking. If a specific command is not supported by the firmware version given
 in ver, the corresponding tc_*() call will fail as unsupported and return undef (in this case $NexStarCtl::error
@@ -382,14 +382,14 @@ will be set to -5). If version is VER_AUX, version enforcement
 is disabled and all commands are enabled but some may fail, because they may not be supported by the current hand controller
 firmware. To avoid this use VER_AUTO (or omit it) to set the version to the value reported by the currently connected hand
 controller. By default protocol version enforcement is disabled and the unsupported commands will either timeout
-or return erratic results. Because of this, calling enforce_proto_version() with VER_AUTO or no ver parameter right after
+or return erratic results. Because of this, calling enforce_protocol_version() with VER_AUTO or no ver parameter right after
 open_telescope_port() is highly recommended. The predefined versions are: VER_1_2, VER_1_6, VER_2_2, VER_2_3, VER_3_1, VER_4_10 and VER_4_37_8.
 
 NOTE: The non-documented (AUX) commands are available only when the enforcement is disabled.
 
 =cut
 
-sub enforce_proto_version {
+sub enforce_protocol_version {
 	my ($port, $ver) = @_;
 
 	if ((defined $ver) and ($ver != 0)) {
@@ -406,7 +406,7 @@ sub enforce_proto_version {
 
 This function guesses the manufacturer of the mount by a slight difference in the protocol. The firmware version command returns 2 bytes for Celestron mounts and 6 bytes for SkyWatcher mounts (since version 4.37.8). On success the guessed value is returned (VNDR_CELESTRON or VNDR_SKYWATCHER). On error undef is returned.
 
-NOTE: SkyWather mounts with firmware before 4.37.8 will be threated as Celestron in this case enforce_mount_vendor() can be used.
+NOTE: SkyWather mounts with firmware before 4.37.8 will be threated as Celestron in this case enforce_vendor_protocol() can be used.
 =cut
 
 sub guess_mount_vendor {
@@ -427,7 +427,7 @@ sub guess_mount_vendor {
 	}
 }
 
-=item enforce_mount_vendor(vendor)
+=item enforce_vendor_protocol(vendor)
 
 This function enforces protocol of the specified vendor to be used overriding the guessed one.
 Valid vendor IDs are VNDR_CELESTRON and VNDR_SKYWATCHER. This way the commands not supported
@@ -436,7 +436,7 @@ On success the vendor ID is returned otherwise it returns undef.
 
 =cut
 
-sub enforce_mount_vendor($) {
+sub enforce_vendor_protocol($) {
 	my ($vendor) = @_;
 
 	if (!(VNDR_ALL_SUPPORTED & $vendor)) {

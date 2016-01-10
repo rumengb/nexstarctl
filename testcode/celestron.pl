@@ -23,8 +23,8 @@ print "MOUNT = ".tc_get_model($port)."\n";
 
 print "VERSION = ".tc_get_version($port)."\n";
 
-#enforce_proto_version($port,VER_1_2);
-#enforce_mount_vendor(VNDR_CELESTRON);
+#enforce_protocol_version($port,VER_1_2);
+#enforce_vendor_protocol(VNDR_CELESTRON);
 
 print "Align = ".tc_check_align($port)."\n";
 

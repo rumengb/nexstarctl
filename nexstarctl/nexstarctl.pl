@@ -85,7 +85,7 @@ sub init_telescope {
 		return undef;
 	}
 
-	my $res = enforce_proto_version($dev);
+	my $res = enforce_protocol_version($dev);
 	if ($res == undef) {
 		print RED "Communication with the telescope on port $tport failed: $!\n";
 		close_telescope_port($dev);
