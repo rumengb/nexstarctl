@@ -91,15 +91,15 @@ use constant {
 	VER_AUTO => 0x0,
 
 	# Protocol vendors
-	VNDR_ALL => 0xFFFF,
-	VNDR_CELESTRON => 1,
-	VNDR_SKYWATCHER => 2
+	VNDR_CELESTRON =>  0x1,
+	VNDR_SKYWATCHER => 0x2,
+	VNDR_ALL_SUPPORTED => 0x3   # VNDR_CELESTRON | VNDR_SKYWATCHER
 };
 
 
 my $is_tcp = 0;
 my $proto_version = VER_AUX;
-my $mount_vendor = VNDR_ALL;
+my $mount_vendor = VNDR_ALL_SUPPORTED;
 
 # There is no way to tell SkyWatcher from Celestron. Unfortunately both share the
 # same IDs and some Celestron mounts have RTC wile SW does not. That is why the user
@@ -439,9 +439,10 @@ On success the vendor ID is returned otherwise it returns undef.
 sub enforce_mount_vendor($) {
 	my ($vendor) = @_;
 
-	if (($vendor != VNDR_CELESTRON) and ($vendor != VNDR_SKYWATCHER)) {
+	if (!(VNDR_ALL_SUPPORTED & $vendor)) {
 		return undef;
 	}
+
 	$mount_vendor = $vendor;
 }
 
