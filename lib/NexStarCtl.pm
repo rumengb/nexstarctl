@@ -214,7 +214,10 @@ my %mounts = (
 		4 => "EQ8 Series",
 		5 => "AZ-EQ6 Series",
 		6 => "AZ-EQ5 Series",
-		160 => "AllView Series"
+		160 => "AllView Series",
+		( map { $_ => "AZ Series" } (128..143)),
+		( map { $_ => "DOB Series" } (144..159))
+
 	}
 );
 
