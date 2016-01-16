@@ -6,10 +6,10 @@ use NexStarCtl;
 
 # print "(0,".TC_AXIS_RA_AZM.",".TC_DIR_POSITIVE.",3)\n";
 
-
-#print get_model_name(1)."\n";
+enforce_vendor_protocol(VNDR_CELESTRON);
+#print get_mcdel_name(1)."\n";
 #print get_model_name(2)."\n";
-#print get_model_name(19)."\n";
+print get_model_name(22)."\n"; 
 
 #my $port = open_telescope_port("/dev/cu.usbserial"); 
 my $port = open_telescope_port("/dev/ttyUSB0");
