@@ -11,8 +11,8 @@ enforce_vendor_protocol(VNDR_CELESTRON);
 #print get_model_name(2)."\n";
 print get_model_name(22)."\n"; 
 
-#my $port = open_telescope_port("/dev/cu.usbserial"); 
-my $port = open_telescope_port("/dev/ttyUSB0");
+my $port = open_telescope_port("/dev/ttys002"); 
+#my $port = open_telescope_port("/tmp/cam");
 
 if (!defined $port) {
 	print "Can not open communication port.\n";
@@ -42,27 +42,27 @@ print "Error=".$NexStarCtl::error."\n";
 #my ($lon,$lat) = tc_get_location_str($port);
 #print "LONs=$lon LATs=$lat\n";
 
-my $tm=time();
-print "$tm\n";
-print "SETTIME= ".tc_set_time($port,$tm,2,0)."\n";
+#my $tm=time();
+#print "$tm\n";
+#print "SETTIME= ".tc_set_time($port,$tm,2,0)."\n";
 
-my ($date,$time,$tz,$dst) = tc_get_time_str($port);
+#my ($date,$time,$tz,$dst) = tc_get_time_str($port);
 
-print "$date, $time, $tz, $dst\n";
+#print "$date, $time, $tz, $dst\n";
 
 
-#my $echo;
-#for (my $i=10; $i<256; $i++) {
-#	$echo = ord(tc_echo($port, chr($i)));
-#
-#	sleep 1;
-#	if ($echo != $i) {
-#		print "ERROR: Sent $i received $echo\n";
-#	} else {
-#		print "OK: Sent $i received $echo\n";
-#	}
-#	
-#}
+my $echo;
+for (my $i=1; $i<256; $i++) {
+	$echo = ord(tc_echo($port, chr($i)));
+
+	#sleep 1;
+	if ($echo != $i) {
+		print "ERROR: Sent $i received $echo\n";
+	} else {
+		print "OK: Sent $i received $echo\n";
+	}
+	
+}
 
 #print "GOTO = ".tc_goto_rade_p($port,11*15,21)."\n";
 
@@ -113,11 +113,14 @@ print "$date, $time, $tz, $dst\n";
 print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
 print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
 
-print "Set RA autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_RA_AZM,66) . "\n";
-print "Get RA autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
-
-print "Set DE autoguide rate: " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,22) . "\n";
-print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
+for (my $rate = -1; $rate < 102; $rate++) {
+	my $res = tc_set_autoguide_rate($port,TC_AXIS_RA_AZM,$rate);
+	if ($res != 1) {print "set faied\n";}
+	print "Get RA autoguide rate: $rate => " . tc_get_autoguide_rate($port,TC_AXIS_RA_AZM) . "\n";
+	#print "\n";
+	#print "Set DE autoguide rate: $rate => " . tc_set_autoguide_rate($port,TC_AXIS_DE_ALT,22) . "\n";
+	#print "Get DE autoguide rate: " . tc_get_autoguide_rate($port,TC_AXIS_DE_ALT) . "\n";
+}
 
 close_telescope_port($port);
 

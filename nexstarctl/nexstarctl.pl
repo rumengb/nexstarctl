@@ -37,7 +37,7 @@ sub print_help() {
 	      "       $N gettime [telescope]\n".
 	      "       $N setlocation LON LAT [telescope]\n".
 	      "       $N getlocation [telescope]\n".
-	      "       $N settrack [equatorial|north|south|azalt|off] [telescope]\n".
+	      "       $N settrack [equatorial|north|south|azalt|pec|off] [telescope]\n".
 	      "       $N gettrack [telescope]\n".
 	      "       $N goto RA DE [telescope]\n".
 	      "       $N gotoaz AZ ALT [telescope]\n".
@@ -399,6 +399,8 @@ sub settrack {
 		$tracking = TC_TRACK_EQ_NORTH;
 	} elsif ($mode eq "azalt") {
 		$tracking = TC_TRACK_ALT_AZ;
+	} elsif ($mode eq "pec") {
+		$tracking = TC_TRACK_EQ_PEC;
 	} elsif ($mode eq "off") {
 		$tracking = TC_TRACK_OFF;
 	} else {
