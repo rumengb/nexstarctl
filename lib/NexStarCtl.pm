@@ -160,6 +160,8 @@ our @EXPORT = qw(
 	TC_TRACK_ALT_AZ
 	TC_TRACK_EQ_NORTH
 	TC_TRACK_EQ_SOUTH
+	TC_TRACK_EQ
+	TC_TRACK_EQ_PEC
 
 	TC_DIR_POSITIVE
 	TC_DIR_NEGATIVE
@@ -171,10 +173,22 @@ our @EXPORT = qw(
 our $VERSION = "0.15";
 
 use constant {
+	NX_TC_TRACK_OFF => 0,
+	NX_TC_TRACK_ALT_AZ => 1,
+	NX_TC_TRACK_EQ_NORTH => 2,
+	NX_TC_TRACK_EQ_SOUTH => 3,
+
+	SW_TC_TRACK_OFF => 0,
+	SW_TC_TRACK_ALT_AZ => 1,
+	SW_TC_TRACK_EQ => 2,
+	SW_TC_TRACK_EQ_PEC => 3,
+
 	TC_TRACK_OFF => 0,
 	TC_TRACK_ALT_AZ => 1,
 	TC_TRACK_EQ_NORTH => 2,
 	TC_TRACK_EQ_SOUTH => 3,
+	TC_TRACK_EQ => 4,
+	TC_TRACK_EQ_PEC => 5,
 	
 	TC_DIR_POSITIVE => 1,
 	TC_DIR_NEGATIVE => 0,
@@ -1041,42 +1055,130 @@ sub tc_set_time {
 =item tc_get_tracking_mode(port)
 
 Reads the tracking mode of the mount and returns one of the folowing:
-TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH, TC_REACK_EQ_SOUTH.
+TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH (Celestron only), TC_TRACK_EQ_SOUTH (Celestron only),
+TC_TRACK_EQ (SkyWatcher only) and TC_TRACK_EQ_PEC (Sky-Watcher only).
 If no response received, undef is returned.
 
 =cut
 sub tc_get_tracking_mode($) {
 	my ($port) = @_;
+	my $mode;
 
 	return undef if version_before(VER_2_3);
 
 	$port->write("t");
 	my $response = read_telescope($port, 2);
 	if (defined $response) {
-		return ord(substr($response, 0, 1));
+		$mode = ord(substr($response, 0, 1));
 	} else {
 		return undef;
 	}
+
+	# Sky-Watcher mount
+	if($mount_vendor == VNDR_SKYWATCHER) {
+		if ($mode == SW_TC_TRACK_OFF) {
+			return TC_TRACK_OFF;
+
+		} elsif ($mode == SW_TC_TRACK_ALT_AZ) {
+			return TC_TRACK_ALT_AZ;
+
+		} elsif ($mode == SW_TC_TRACK_EQ) {
+			return TC_TRACK_EQ;
+
+		} elsif ($mode == SW_TC_TRACK_EQ_PEC) {
+			return TC_TRACK_EQ_PEC;
+		}
+	# Celestron mount
+	} else {
+		if ($mode == NX_TC_TRACK_OFF) {
+			return TC_TRACK_OFF;
+
+		} elsif ($mode == NX_TC_TRACK_ALT_AZ) {
+			return TC_TRACK_ALT_AZ;
+
+		} elsif ($mode == NX_TC_TRACK_EQ_NORTH) {
+			return TC_TRACK_EQ_NORTH;
+
+		} elsif ($mode == NX_TC_TRACK_EQ_SOUTH) {
+			return TC_TRACK_EQ_SOUTH;
+		}
+	}
+	return undef;
 }
 
 =item tc_set_tracking_mode(port, mode)
 
 Sets the tracking mode of the mount to one of the folowing:
-TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH, TC_REACK_EQ_SOUTH.
-If the mode is not one of the listed -1 is returned.
+TC_TRACK_OFF, TC_TRACK_ALT_AZ, TC_TRACK_EQ_NORTH, TC_TRACK_EQ_SOUTH, TC_TRACK_EQ and TC_TRACK_EQ_PEC.
+For Sky-Watcher TC_TRACK_EQ_NORTH, TC_TRACK_EQ_SOUTH and TC_TRACK_EQ do the same thing. For Celestron
+TC_TRACK_EQ is interpreted as TC_TRACK_EQ_NORTH or TC_TRACK_EQ_SOUTH depending on the geographic latitude
+of the location (Northern or Southern hemisphere). If the mode is not one of the listed -1 is returned.
 If no response received, undef is returned.
 
 =cut
 sub tc_set_tracking_mode($$) {
 	my ($port,$mode) = @_;
+	my $_mode;
 
 	return undef if version_before(VER_1_6);
 
-	if (($mode < 0) or ($mode > 3)) {
-		return -1;
+	# Sky-Watcher mount
+	if($mount_vendor == VNDR_SKYWATCHER) {
+		if ($mode == TC_TRACK_OFF) {
+			$_mode = TC_TRACK_OFF;
+
+		} elsif ($mode == TC_TRACK_ALT_AZ) {
+			$_mode = SW_TC_TRACK_ALT_AZ;
+
+		} elsif (($mode == TC_TRACK_EQ) or
+				($mode == TC_TRACK_EQ_NORTH) or
+				($mode == TC_TRACK_EQ_SOUTH)) {
+			$_mode = SW_TC_TRACK_EQ;
+
+		} elsif ($mode == TC_TRACK_EQ_PEC) {
+			$_mode = SW_TC_TRACK_EQ_PEC;
+
+		} else {
+			return -1;
+		}
+
+	# Celestron mount
+	} else {
+		if ($mode == TC_TRACK_OFF) {
+			$_mode = NX_TC_TRACK_OFF;
+
+		} elsif ($mode == TC_TRACK_ALT_AZ) {
+			$_mode = NX_TC_TRACK_ALT_AZ;
+
+		} elsif ($mode == TC_TRACK_EQ_NORTH) {
+			$_mode = NX_TC_TRACK_EQ_NORTH;
+
+		} elsif ($mode == TC_TRACK_EQ_SOUTH) {
+			$_mode = NX_TC_TRACK_EQ_SOUTH;
+
+		} elsif ($mode == TC_TRACK_EQ) {
+			my (undef, $lat) = tc_get_location($port);
+			if (!defined $lat) {
+				return -1;
+			}
+			if ($lat < 0) {
+				$_mode = NX_TC_TRACK_EQ_SOUTH;
+			} else {
+				$_mode = NX_TC_TRACK_EQ_NORTH;
+			}
+
+		} elsif ($mode == TC_TRACK_EQ_PEC) {
+			# unsupported on Celestron
+			$error = -5;
+			return undef;
+
+		} else {
+			return -1;
+		}
 	}
+
 	$port->write("T");
-	$port->write(chr($mode));
+	$port->write(chr($_mode));
 	my $response = read_telescope($port, 1);
 	if (defined $response) {
 		return 1;

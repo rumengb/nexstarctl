@@ -19,7 +19,7 @@ use if $^O eq "MSWin32", "Win32::Console::ANSI";
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 
-my $VERSION = "0.4";
+my $VERSION = "0.5";
 
 my $port;
 my $verbose;
@@ -37,7 +37,7 @@ sub print_help() {
 	      "       $N gettime [telescope]\n".
 	      "       $N setlocation LON LAT [telescope]\n".
 	      "       $N getlocation [telescope]\n".
-	      "       $N settrack [north|south|azalt|off] [telescope]\n".
+	      "       $N settrack [equatorial|north|south|azalt|off] [telescope]\n".
 	      "       $N gettrack [telescope]\n".
 	      "       $N goto RA DE [telescope]\n".
 	      "       $N gotoaz AZ ALT [telescope]\n".
@@ -391,8 +391,9 @@ sub settrack {
 	}
 
 	my $tracking;
-
-	if ($mode eq "south") {
+	if ($mode eq "equatorial") {
+		$tracking = TC_TRACK_EQ;
+	} elsif ($mode eq "south") {
 		$tracking = TC_TRACK_EQ_SOUTH;
 	} elsif ($mode eq "north") {
 		$tracking = TC_TRACK_EQ_NORTH;
@@ -452,6 +453,10 @@ sub gettrack {
 		print "Tracking: Equatorial North\n";
 	} elsif ($tracking == TC_TRACK_ALT_AZ) {
 		print "Tracking: Aaltazimuthal\n";
+	} elsif ($tracking == TC_TRACK_EQ) {
+		print "Tracking: Equatorial\n";
+	} elsif ($tracking == TC_TRACK_EQ_PEC) {
+		print "Tracking: Equatorial + PEC\n";
 	} else {
 		print "Tracking: Unknown\n";
 	}
