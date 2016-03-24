@@ -78,22 +78,27 @@ if ($^O eq "MSWin32") {
 }
 
 use constant {
-	VER_1_2 => 0x10200,
-	VER_1_6 => 0x10600,
-	VER_2_2 => 0x20200,
-	VER_2_3 => 0x20300,
-	VER_3_1 => 0x30100,
-	VER_4_10 => 0x40A00,
+	VER_1_2    => 0x10200,
+	VER_1_6    => 0x10600,
+	VER_2_2    => 0x20200,
+	VER_2_3    => 0x20300,
+	VER_3_1    => 0x30100,
+	VER_4_10   => 0x40A00,
 	VER_4_37_8 => 0x042508,
 	# All protocol versions
-	VER_AUX => 0xFFFFFF,
+	VER_AUX  => 0xFFFFFF,
 	# Auto detect version by HC
 	VER_AUTO => 0x0,
 
 	# Protocol vendors
-	VNDR_CELESTRON =>  0x1,
-	VNDR_SKYWATCHER => 0x2,
-	VNDR_ALL_SUPPORTED => 0x3   # VNDR_CELESTRON | VNDR_SKYWATCHER
+	VNDR_CELESTRON     => 0x1,
+	VNDR_SKYWATCHER    => 0x2,
+	VNDR_ALL_SUPPORTED => 0x3,   # VNDR_CELESTRON | VNDR_SKYWATCHER
+
+	# version manipulation
+	RELEASE_MASK  => 0xFF0000,
+	REVISION_MASK => 0x00FF00,
+	PATCH_MASK    => 0x0000FF
 };
 
 
@@ -236,13 +241,44 @@ my %mounts = (
 	}
 );
 
-sub version_before {
-	my ($version, $vendor) = @_;
+sub release_before($) {
+	my ($release) = @_;
 
-	if ((defined $vendor) and (($mount_vendor & $vendor) == 0)) {
+	if ((($proto_version & RELEASE_MASK) >> 16) < $release) {
 		$error = -5;
-		return $error;
+	} else {
+		$error = 0;
 	}
+
+	return $error;
+}
+
+sub revision_before($) {
+	my ($revision) = @_;
+
+	if ((($proto_version & REVISION_MASK) >> 8) < $revision) {
+		$error = -5;
+	} else {
+		$error = 0;
+	}
+
+	return $error;
+}
+
+sub patch_before($) {
+	my ($patch) = @_;
+
+	if (($proto_version & PATCH_MASK) < $patch) {
+		$error = -5;
+	} else {
+		$error = 0;
+	}
+
+	return $error;
+}
+
+sub version_before($) {
+	my ($version) = @_;
 
 	if ($proto_version < $version) {
 		$error = -5;
@@ -251,6 +287,28 @@ sub version_before {
 	}
 
 	return $error;
+}
+
+sub vendor_not($) {
+	my ($vendor) = @_;
+
+	if ($mount_vendor == $vendor) {
+		$error = 0;
+	} else {
+		$error = -5;
+	}
+
+	return $error;
+}
+
+sub vendor_is($) {
+	my ($vendor) = @_;
+
+	if ($mount_vendor == $vendor) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 =head1 TELESCOPE COMMUNICATION
@@ -503,7 +561,9 @@ undef is returned.
 sub tc_get_orientation($) {
 	my ($port) = @_;
 
-	return undef if version_before(VER_4_37_8, VNDR_SKYWATCHER);
+	return undef if vendor_not(VNDR_SKYWATCHER);
+	return undef if release_before(3);
+	return undef if revision_before(37);
 
 	$port->write("p");
 	my $response = read_telescope($port,2);
@@ -683,7 +743,12 @@ If no response received, undef is returned.
 sub tc_sync_rade {
 	my ($port, $ra, $de, $precise) = @_;
 
-	return undef if version_before(VER_4_10);
+	if(vendor_is(VNDR_SKYWATCHER)) {
+		return undef if release_before(3);
+		return undef if revision_before(37);
+	} else {
+		return undef if version_before(VER_4_10);
+	}
 
 	if (($ra < 0) or ($ra > 360)) {
 		return -1;
@@ -1075,7 +1140,7 @@ sub tc_get_tracking_mode($) {
 	}
 
 	# Sky-Watcher mount
-	if($mount_vendor == VNDR_SKYWATCHER) {
+	if(vendor_is(VNDR_SKYWATCHER)) {
 		if ($mode == SW_TC_TRACK_OFF) {
 			return TC_TRACK_OFF;
 
@@ -1120,10 +1185,15 @@ sub tc_set_tracking_mode($$) {
 	my ($port,$mode) = @_;
 	my $_mode;
 
-	return undef if version_before(VER_1_6);
+	if(vendor_is(VNDR_SKYWATCHER)) {
+		return undef if release_before(3);
+		return undef if revision_before(1);
+	} else {
+		return undef if version_before(VER_1_6);
+	}
 
 	# Sky-Watcher mount
-	if($mount_vendor == VNDR_SKYWATCHER) {
+	if(vendor_is(VNDR_SKYWATCHER)) {
 		if ($mode == TC_TRACK_OFF) {
 			$_mode = TC_TRACK_OFF;
 
@@ -1202,7 +1272,12 @@ If no response received, undef is returned.
 sub tc_slew_fixed {
 	my ($port,$axis,$direction,$rate) = @_;
 
-	return undef if version_before(VER_1_6);
+	if(vendor_is(VNDR_SKYWATCHER)) {
+		return undef if release_before(3);
+		return undef if revision_before(1);
+	} else {
+		return undef if version_before(VER_1_6);
+	}
 	
 	if ($axis>0) { 
 		$axis = _TC_AXIS_RA_AZM;
@@ -1243,7 +1318,12 @@ On success 1 is returned. If no response received, undef is returned.
 sub tc_slew_variable {
 	my ($port,$axis,$direction,$rate) = @_;
 
-	return undef if version_before(VER_1_6);
+	if(vendor_is(VNDR_SKYWATCHER)) {
+		return undef if release_before(3);
+		return undef if revision_before(1);
+	} else {
+		return undef if version_before(VER_1_6);
+	}
 
 	if ($axis>0) { 
 		$axis = _TC_AXIS_RA_AZM;
@@ -1381,7 +1461,8 @@ If no response received, undef is returned.
 sub tc_get_backlash($$$) {
 	my ($port,$axis,$direction) = @_;
 
-	return undef if version_before(VER_AUX, VNDR_CELESTRON);
+	return undef if vendor_not(VNDR_CELESTRON);
+	return undef if version_before(VER_AUX);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
@@ -1416,7 +1497,8 @@ If no response received, undef is returned.
 sub tc_set_backlash($$$$) {
 	my ($port,$axis,$direction,$backlash) = @_;
 
-	return undef if version_before(VER_AUX, VNDR_CELESTRON);
+	return undef if vendor_not(VNDR_CELESTRON);
+	return undef if version_before(VER_AUX);
 
 	if ($axis > 0) {
 		$axis = _TC_AXIS_RA_AZM;
