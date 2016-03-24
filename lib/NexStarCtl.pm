@@ -350,7 +350,7 @@ sub open_telescope_port($) {
 	} else {
 		$port = new Device::SerialPort($portname);
 	}
-	if (! defined $port) {return undef;} 	
+	if (! defined $port) {return undef;}
 	#$port->debug(1);
 	$port->baudrate(9600); 
 	$port->parity("none"); 
@@ -1185,12 +1185,7 @@ sub tc_set_tracking_mode($$) {
 	my ($port,$mode) = @_;
 	my $_mode;
 
-	if(vendor_is(VNDR_SKYWATCHER)) {
-		return undef if release_before(3);
-		return undef if revision_before(1);
-	} else {
-		return undef if version_before(VER_1_6);
-	}
+	return undef if version_before(VER_1_6);
 
 	# Sky-Watcher mount
 	if(vendor_is(VNDR_SKYWATCHER)) {

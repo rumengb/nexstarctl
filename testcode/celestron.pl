@@ -6,18 +6,28 @@ use NexStarCtl;
 
 # print "(0,".TC_AXIS_RA_AZM.",".TC_DIR_POSITIVE.",3)\n";
 
-enforce_vendor_protocol(VNDR_CELESTRON);
+#enforce_vendor_protocol(VNDR_CELESTRON);
+
 #print get_mcdel_name(1)."\n";
 #print get_model_name(2)."\n";
-print get_model_name(22)."\n"; 
+#print get_model_name(22)."\n"; 
 
-my $port = open_telescope_port("/dev/ttys002"); 
+my $port = open_telescope_port("/dev/ttyUSB0"); 
 #my $port = open_telescope_port("/tmp/cam");
 
 if (!defined $port) {
 	print "Can not open communication port.\n";
 	exit;
 }
+
+enforce_vendor_protocol(VNDR_CELESTRON);
+enforce_protocol_version($port,0x040001);
+
+print "tc_get_orientation = ".tc_get_orientation($port)."    err:".$NexStarCtl::error."\n";
+print "tc_slew_fixed = ".tc_slew_fixed($port,1,1)."    err:".$NexStarCtl::error."\n";
+
+exit(0); 
+
 
 print "MOUNT = ".tc_get_model($port)."\n";
 
