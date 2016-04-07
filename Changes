@@ -1,5 +1,5 @@
 Revision history for Perl extension NexStarCtl.
-0.15 TBD
+0.15  Thu Apr  7 15:21:03 2016
 	- add several new calls
 	- add support for SkyWatcher mounts
 	- add support for different protocol versions
