@@ -12,7 +12,7 @@ use NexStarCtl;
 #print get_model_name(2)."\n";
 #print get_model_name(22)."\n"; 
 
-my $port = open_telescope_port("/dev/ttyUSB0"); 
+my $port = open_telescope_port("nexstar://localhost:2000"); 
 #my $port = open_telescope_port("/tmp/cam");
 
 if (!defined $port) {
@@ -26,7 +26,7 @@ enforce_protocol_version($port,0x040001);
 print "tc_get_orientation = ".tc_get_orientation($port)."    err:".$NexStarCtl::error."\n";
 print "tc_slew_fixed = ".tc_slew_fixed($port,1,1)."    err:".$NexStarCtl::error."\n";
 
-exit(0); 
+#exit(0); 
 
 
 print "MOUNT = ".tc_get_model($port)."\n";
@@ -61,39 +61,39 @@ print "Error=".$NexStarCtl::error."\n";
 #print "$date, $time, $tz, $dst\n";
 
 
-my $echo;
-for (my $i=1; $i<256; $i++) {
-	$echo = ord(tc_echo($port, chr($i)));
+#my $echo;
+#for (my $i=1; $i<256; $i++) {
+#	$echo = ord(tc_echo($port, chr($i)));
+#
+#	#sleep 1;
+#	if ($echo != $i) {
+#		print "ERROR: Sent $i received $echo\n";
+#	} else {
+#		print "OK: Sent $i received $echo\n";
+#	}
+#	
+#}
 
-	#sleep 1;
-	if ($echo != $i) {
-		print "ERROR: Sent $i received $echo\n";
-	} else {
-		print "OK: Sent $i received $echo\n";
-	}
-	
-}
+print "GOTO = ".tc_goto_rade_p($port,11*15,21)."\n";
 
-#print "GOTO = ".tc_goto_rade_p($port,11*15,21)."\n";
+sleep(2);
+print "GOTO Cancel = ".tc_goto_cancel($port)."\n";
 
-#sleep(2);
-#print "GOTO Cancel = ".tc_goto_cancel($port)."\n";
+print "TRACKING SET= ".tc_set_tracking_mode($port,0)."\n";
+print "TRACKING = ".tc_get_tracking_mode($port)."\n";
 
-#print "TRACKING SET= ".tc_set_tracking_mode($port,0)."\n";
-#print "TRACKING = ".tc_get_tracking_mode($port)."\n";
+tc_slew_variable($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,15.25); 
+sleep(2);
+tc_slew_variable($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,1);
+sleep(2);
+tc_slew_fixed($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0);
+sleep(2);
+tc_slew_fixed($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0);
 
-#tc_slew_variable($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,15.25); 
-#sleep(2);
-#tc_slew_variable($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,1);
-#sleep(2);
-#tc_slew_fixed($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0);
-#sleep(2);
-#tc_slew_fixed($port,TC_AXIS_DE_ALT,TC_DIR_POSITIVE,0);
+print "TRACKING = ".tc_get_tracking_mode($port)."\n";
 
-#print "TRACKING = ".tc_get_tracking_mode($port)."\n";
-
-#print "TRACKING SET= ".tc_set_tracking_mode($port,2)."\n";
-#print "TRACKING = ".tc_get_tracking_mode($port)."\n";
+print "TRACKING SET= ".tc_set_tracking_mode($port,2)."\n";
+print "TRACKING = ".tc_get_tracking_mode($port)."\n";
 
 
 #while (tc_goto_in_progress($port)) {
@@ -104,12 +104,12 @@ for (my $i=1; $i<256; $i++) {
 
 #print "SYNC = ".tc_sync_rade_p($port,0,0)."\n";
 
-#my ($rap,$decp) = tc_get_rade_p($port);
-#my ($ra,$dec) = tc_get_rade($port);
+my ($rap,$decp) = tc_get_rade_p($port);
+my ($ra,$dec) = tc_get_rade($port);
 
 
-#my ($azp,$altp) = tc_get_azalt_p($port);
-#my ($az,$alt) = tc_get_azalt($port);
+my ($azp,$altp) = tc_get_azalt_p($port);
+my ($az,$alt) = tc_get_azalt($port);
 
 #print "Set RA(+) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_POSITIVE,0) . "\n";
 #print "Set RA(-) Backlash: " . tc_set_backlash($port,TC_AXIS_RA_AZM,TC_DIR_NEGATIVE,0) . "\n";

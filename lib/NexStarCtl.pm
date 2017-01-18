@@ -318,9 +318,10 @@ sub vendor_is($) {
 =item open_telescope_port(port_name)
 
 Opens a communication port to the telescope by name (like "/dev/ttyUSB0") and
-returns it to be used in other functions. If the port_name has "tcp://" prefix
-the rest of the string is interpreted as an IP address and port where to connect to
-(like "tcp://localhost:9999"). In case of error undef is returned.
+returns it to be used in other functions. If the port_name has "tcp://" or
+"nexstar://" prefix the rest of the string is interpreted as hostname or IP
+address and port where to connect to (like "nexstar://localhost:9999"). In case
+of error undef is returned.
 
 NOTE: To be used with TCP you need to run nexbridge on the remote computer.
 
@@ -332,6 +333,9 @@ sub open_telescope_port($) {
 
 	if ($portname =~ /^tcp:\/\//) {
 		$portname =~ s/^tcp:\/\///;
+		$is_tcp=1;
+	} elsif ($portname =~ /^nexstar:\/\//) {
+		$portname =~ s/^nexstar:\/\///;
 		$is_tcp=1;
 	} else {
 		$is_tcp=0;

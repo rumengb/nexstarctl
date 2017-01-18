@@ -1,4 +1,5 @@
 Revision history for Perl extension NexStarCtl.
+	- add support for nexstar:// prefix
 0.15  Thu Apr  7 15:21:03 2016
 	- add several new calls
 	- add support for SkyWatcher mounts
